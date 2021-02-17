@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package
+  name="modelKarlenPypm"
+  displayName="modelKarlenPypm Package"
+  isAddOn="True" 
+  extendsPackage="epi"
+  version="1.0.0">
+  <transformers>
+    <transformer 
+      name="Model" 
+      isPrimary="True"
+      displayName="modelKarlenPypm Model"
+      programName="python"
+      programArguments="model.py"
+      extendsTransformer="epi_Primary"
+      isRunnable ="True">
+    </transformer>
+  </transformers>
+</package>
