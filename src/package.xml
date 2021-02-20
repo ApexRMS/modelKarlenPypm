@@ -90,4 +90,9 @@
         </datafeeds>
     </transformer>
     </transformers>
+    <layouts>
+        <layout name="OutputDatafeed">
+            <item name="BaselineModel" appendTo="epi_Inputs"/>
+        </layout>
+    </layouts>
 </package>

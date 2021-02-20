@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+for name in dir():
+    if not name.startswith('_'):
+        del globals()[name]
+
 import requests
 import os
 import sys
@@ -7,6 +11,10 @@ import pickle
 import pypmca
 
 import pandas as pd
+
+from Decompose import decompose
+from Rebuild import rebuild
+from FitAndSim import fitandsim
 
 def open_model(filename, my_pickle):
     model = pickle.loads(my_pickle)
@@ -73,13 +81,47 @@ for pop_name in model.populations:
     population = model.populations[pop_name];
     print('\t\t{:<20s}\t{}'.format(population.name, population.description));
 
-model.save_file('{}\\downloaded_model.pypm'.format('C:\\Users\\User\\Documents\\SyncroSim\\Packages\\modelKarlenPypm'))
+'''
+    When I recompile the modelKarlenPypm XML, it deletes the epi.ssim.temp folder, so I'm using the SSIM_TEMP_DIRECTORY
+'''
+OUTPUT_FOLDER = os.getenv('SSIM_TEMP_DIRECTORY')
+
+# no extension
+DOWNLOADED_MODEL_NAME = 'downloaded_scenario'
+# no extension
+PARAMETER_FILE_NAME = 'model_parameters'
+# no extension
+FINAL_SCENARIO_NAME = 'final_scenario'
+# no extension
+EMPIRICAL_DATA_FILE = 'summary_output'
+
+REGION_NAME = 'Canada - British Columbia'
+# no extension
+SIM_FILE_NAME = 'SSIM_APPEND-modelKarlenPypm_OutputDatasheet'
+
+# epi package run control?
+days_to_fit = [37, 350] # range of days in the data to fit
+cumul_reset = True; # whether to start the cumulative at zero
+skip_dates_text = '25,45:47'
+num_iterations = 200
+
+model.save_file('{}\\{}.pypm'.format(OUTPUT_FOLDER, DOWNLOADED_MODEL_NAME))
 
 print('Getting the default parameters...')
-import karlenDecompose
+decompose(OUTPUT_FOLDER, DOWNLOADED_MODEL_NAME, PARAMETER_FILE_NAME)
 
 print('Rebuilding the model...')
-import karlenRebuild
+rebuild(OUTPUT_FOLDER, DOWNLOADED_MODEL_NAME, PARAMETER_FILE_NAME, FINAL_SCENARIO_NAME)
 
 print('Running the simulations...')
-import karlenSimulations
+fitandsim(OUTPUT_FOLDER, EMPIRICAL_DATA_FILE, REGION_NAME, FINAL_SCENARIO_NAME, SIM_FILE_NAME, days_to_fit, cumul_reset, skip_dates_text, num_iterations)
+
+
+
+
+# file1 = open("{}\\myfile.txt".format(os.getenv('SSIM_TEMP_DIRECTORY')),"w")
+# file1.write("Hello \n")
+# # file1.write( "{}".format(os.getenv('SSIM_TRANSFER_DIRECTORY')) )
+# for k, v in os.environ.items():
+#     file1.write(f'{k}={v}\n')
+# file1.close() #to change file access modes
