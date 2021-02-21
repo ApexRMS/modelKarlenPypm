@@ -1,29 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package
-    name="modelKarlenPypm"
-    displayName="modelKarlenPypm Package"
-    isAddOn="True"
-    extendsPackage="epi"
-    version="1.0.0">
-    <transformers>
+  name="modelKarlenPypm"
+  displayName="modelKarlenPypm Package"
+  isAddOn="True"
+  extendsPackage="epi"
+  version="1.0.0">
+  <transformers>
     <transformer
-        name="Model"
-        isPrimary="True"
-        displayName="modelKarlenPypm Model"
-        programName="python"
-        programArguments="model.py"
-        extendsTransformer="epi_Primary"
-        isRunnable ="True">
-        <datafeeds>
-        <datafeed
-            name="InputDatafeed"
-            displayName="Inputs"
-            dataScope="Scenario">
-            <datasheets>
-            <datasheet name="InputDatasheet">
-            <columns>
-                <column name="InputDatasheetID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer"/>
+      name="ModelParameters"
+      isPrimary="True"
+      displayName="Initial Parameter Values"
+      programName="python"
+      programArguments="getDefaultParameterValues.py"
+      extendsTransformer="epi_Primary"
+      isRunnable ="True">
+      <datafeeds>
+        <datafeed name="ParameterValues" displayName="Parameter Values"  dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ParameterValues" displayname="Parameter Values">
+              <columns>
+                <column name="InputID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" displayName="Scenario" dataType="Integer"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
                 <column name="Type" dataType="String" displayName="Variable Type"/>
@@ -35,19 +32,23 @@
                 <column name="PriorMean" dataType="Double" displayName="Prior Mean"/>
                 <column name="PriorSecond" dataType="Double" displayName="Prior SD/Half-width"/>
                 <column name="MCMCStep" dataType="Double" displayName="MCMC step size"/>
-            </columns>
+              </columns>
             </datasheet>
-            </datasheets>
+          </datasheets>
         </datafeed>
-        <!-- the second data sheet will be the output file from the simulation -->
-    <datafeed
-        name="OutputDatafeed"
-        displayName="Outputs"
-        dataScope="Scenario"
-        isOutput="True">
-        <datasheets>
-          <datasheet name="OutputDatasheet">
-            <columns>
+      </datafeeds>
+    </transformer>
+    <transformer
+      name="SimulationData"
+      displayName="Simulation Data"
+      programName="python"
+      programArguments="getResults.py"
+      isRunnable ="True">
+      <datafeeds>
+        <datafeed name="SimulationResults" displayName="Simulation Results" dataScope="Scenario" isOutput="True">
+          <datasheets>
+            <datasheet name="Predictions" displayName="Predictions">
+              <columns>
                 <column name="ScenarioID" dataType="Integer"/>
                 <column name="Iteration" dataType="Integer" displayName="Iteration"/>
                 <column name="TimeStep" dataType="Integer" displayName="Time step"/>
@@ -83,16 +84,25 @@
                 <column name="Vaccinated" dataType="Double" displayName="Vaccinated"/>
                 <column name="Ventilated" dataType="Double" displayName=" ICU Ventilated"/>
                 <column name="VentilatedRel" dataType="Double" displayName="ICU Ventilated Released"/>
-            </columns>
-          </datasheet>
-        </datasheets>
+              </columns>
+            </datasheet>
+            <datasheet name="FittedParameters" displayName="Fitted Parameters">
+              <columns>
+                <column name="ScenarioID" dataType="Integer"/>
+                <column name="ParameterName" dataType="String" displayName="Parameter Name"/>
+                <column name="FittedValue" dataType="Double" displayName="Value after fitting"/>
+              </columns>
+            </datasheet>
+          </datasheets>
         </datafeed>
-        </datafeeds>
+      </datafeeds>
     </transformer>
-    </transformers>
-    <layouts>
-        <layout name="OutputDatafeed">
-            <item name="BaselineModel" appendTo="epi_Inputs"/>
-        </layout>
-    </layouts>
+  </transformers>
+  <layouts>
+    <layout name="coreforms_ScenarioDataFeeds">
+      <item name="ParameterValues" appendTo="epi_Inputs"/>
+      <item name="SimulationResults" appendTo="epi_Outputs"/>
+      <item name="FittedParameters" appendTo="epi_Outputs"/>
+    </layout>
+  </layouts>
 </package>
