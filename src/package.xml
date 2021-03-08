@@ -1,26 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package
-  name="modelKarlenPypm"
-  displayName="modelKarlenPypm Package"
-  isAddOn="True"
-  extendsPackage="epi"
-  version="1.0.0">
+<package name="modelKarlenPypm" displayName="Add-On to the Epidemic Package for the Karlen model" isAddOn="True" extendsPackage="epi" version="1.0.0">
   <transformers>
     <transformer
-      name="ModelParameters"
+      name="modelKaylenPypm_Parameters"
       isPrimary="True"
-      displayName="Initial Parameter Values"
-      programName="python"
+      displayName="modelKarlenPypm_Download"
+      programName="spyder"
       programArguments="getDefaultParameterValues.py"
       extendsTransformer="epi_Primary"
+      runContext="LocalOnly"
       isRunnable ="True">
       <datafeeds>
-        <datafeed name="ParameterValues" displayName="Parameter Values"  dataScope="Scenario">
+        <!-- <datafeed name="PyConfig" displayName="Python Configuration" dataScope="Library">
+          <datasheets>
+            <datasheet name="Python Configuration" displayName="Python Configuration" isSingleRow="True">
+              <columns>
+                <column name="RConfigID" dataType="Integer" isPrimary="True"/>
+                <column name="ExePath" dataType="String"/>
+                <column name="RunInWindow" dataType="Boolean"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed> -->
+        <datafeed name="ParameterValues" displayName="Parameter Values" dataScope="Scenario">
           <datasheets>
             <datasheet name="ParameterValues" displayname="Parameter Values">
               <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" displayName="Scenario" dataType="Integer"/>
+                <!-- <column name="InputDatasheetID" dataType="Integer"/> -->
+                <column name="ScenarioID" dataType="Integer" isPrimary="True"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
                 <column name="Type" dataType="String" displayName="Variable Type"/>
@@ -38,71 +45,13 @@
         </datafeed>
       </datafeeds>
     </transformer>
-    <transformer
-      name="SimulationData"
-      displayName="Simulation Data"
-      programName="python"
-      programArguments="getResults.py"
-      isRunnable ="True">
-      <datafeeds>
-        <datafeed name="SimulationResults" displayName="Simulation Results" dataScope="Scenario" isOutput="True">
-          <datasheets>
-            <datasheet name="Predictions" displayName="Predictions">
-              <columns>
-                <column name="ScenarioID" dataType="Integer"/>
-                <column name="Iteration" dataType="Integer" displayName="Iteration"/>
-                <column name="TimeStep" dataType="Integer" displayName="Time step"/>
-                <column name="TrueReported" dataType="Integer" displayName="Reported Case Incidence"/>
-                <column name="DailyInfected" dataType="Double" displayName="Daily Infected"/>
-                <column name="Infected" dataType="Double" displayName="Infected"/>
-                <column name="Total" dataType="Double" displayName="Total Population"/>
-                <column name="AsymptomaticRecovered" dataType="Double" displayName="Asymptomatic Reovered"/>
-                <column name="ContactTraced" dataType="Double" displayName="Contact Traced"/>
-                <column name="Contagious" dataType="Double" displayName="Contagious"/>
-                <column name="DailyVaccinated" dataType="Double" displayName="Daily Vaccinated"/>
-                <column name="Deaths" dataType="Double" displayName="Deaths"/>
-                <column name="Hospitalized" dataType="Double" displayName="Total ZHospitalization Cases"/>
-                <column name="IcuAdmissions" dataType="Double" displayName="ICU Admissions"/>
-                <column name="Immunized" dataType="Double" displayName="Susceptibles Immunized by Vaccine"/>
-                <column name="InHospital" dataType="Double" displayName="Currently Hospitalized"/>
-                <column name="InIcu" dataType="Double" displayName="Currently in ICU"/>
-                <column name="NonIcuHospitalized" dataType="Double" displayName="Non-ICU Hospitalized"/>
-                <column name="NonIcuRel" dataType="Double" displayName="Non-ICU Released from Hospital"/>
-                <column name="NonVentilatedRel" dataType="Double" displayName="ICU Non-ventilated Released"/>
-                <column name="OnVentilator" dataType="Double" displayName="Currently ICU Ventilated"/>
-                <column name="Outbreaks" dataType="Double" displayName="Infection Outbreaks"/>
-                <column name="Positives" dataType="Double" displayName="Tested Positive"/>
-                <column name="Recovered" dataType="Double" displayName="Recovered"/>
-                <column name="Removed" dataType="Double" displayName="Removed (from the Contagious population)"/>
-                <column name="ReportAnomalies" dataType="Double" displayName="Anomalous Batches of Reports"/>
-                <column name="Reported" dataType="Double" displayName="Positives and Reporting Anomalies"/>
-                <column name="SusVaccCand" dataType="Double" displayName="Susceptible Vaccination Candidates"/>
-                <column name="Susceptible" dataType="Double" displayName="Susceptible"/>
-                <column name="Symptomatic" dataType="Double" displayName="Symptomatic"/>
-                <column name="UsefullyVaccinated" dataType="Double" displayName="Vaccinated when Susceptible"/>
-                <column name="VaccCand" dataType="Double" displayName="Vaccination Candidates"/>
-                <column name="Vaccinated" dataType="Double" displayName="Vaccinated"/>
-                <column name="Ventilated" dataType="Double" displayName=" ICU Ventilated"/>
-                <column name="VentilatedRel" dataType="Double" displayName="ICU Ventilated Released"/>
-              </columns>
-            </datasheet>
-            <datasheet name="FittedParameters" displayName="Fitted Parameters">
-              <columns>
-                <column name="ScenarioID" dataType="Integer"/>
-                <column name="ParameterName" dataType="String" displayName="Parameter Name"/>
-                <column name="FittedValue" dataType="Double" displayName="Value after fitting"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-      </datafeeds>
-    </transformer>
   </transformers>
   <layouts>
+    <layout name="coreforms_LibraryDatafeeds">
+      <item name="core_PyConfig"/>
+    </layout>
     <layout name="coreforms_ScenarioDataFeeds">
-      <item name="ParameterValues" appendTo="epi_Inputs"/>
-      <item name="SimulationResults" appendTo="epi_Outputs"/>
-      <item name="FittedParameters" appendTo="epi_Outputs"/>
+      <item name="ParameterValues" appendTo="epi_Outputs"/>
     </layout>
   </layouts>
 </package>

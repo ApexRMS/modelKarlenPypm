@@ -8,9 +8,17 @@ import pypmca
 
 import pandas as pd
 
-from headerFile import *
+# from headerFile import *
 
-from syncrosim import SyncrosimDB
+from syncro import Syncro
+
+console_path = 'C:\\Program Files\\SyncroSim'
+library_path = 'C:\\Users\\User\\Documents\\SyncroSim\\Libraries\\epi.ssim'
+theConsole = '{}\\SyncroSim.Console.exe'.format(console_path)
+
+ss = Syncro(console_path, library_path)
+hereProj = ss.newProject('Definitions')
+myScenario = ss.newScenario('myScenario', hereProj)
 
 try:
     foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19');
@@ -59,7 +67,8 @@ try:
 except Halt as hl:
     print(hl);
 
-model.save_file('{}\\{}.pypm'.format(OUTPUT_FOLDER, DOWNLOADED_MODEL_NAME))
+model.save_file('{}.temp\\downloadedScenario.pypm'.format(library_path))
+
 
 PARAMETER_ATTIBUTES = ['name', 'description', 'parameter_type', 'initial_value', 'parameter_min', 'parameter_max', 'mcmc_step', 'prior_function']
 Parameters = dict()
@@ -94,8 +103,10 @@ for key in Parameters.keys():
 # changing the order of the output table
 ParameterFrame = ParameterFrame[['name', 'description', 'parameter_type', 'initial_value', 'parameter_min', 'parameter_max', 'status', 'prior_function', 'prior_mean', 'prior_second', 'mcmc_step']]
 
-ParameterFrame.to_csv('{}\\{}.csv'.format(OUTPUT_FOLDER, PARAMETER_FILE_NAME), index=False)
+defaultParameters = ss.getDatasheet(myScenario, "modelKarlenPypm_ParameterValues")
 
-''' not sure how to run  both files from the XML as written, so I'll call it below until further advice '''
+defaultParameters.Name = ParameterFrame.name
 
-import getResults
+# ParameterFrame.to_csv('{}\\{}.csv'.format(OUTPUT_FOLDER, PARAMETER_FILE_NAME), index=False)
+
+ss.saveDatasheet(myScenario, defaultParameters, "modelKarlenPypm_ParameterValues")
