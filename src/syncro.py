@@ -30,31 +30,20 @@ class Syncro:
         for projectName in self.getProjects():
             projNumber = self.getProjectID(projectName)
             self.__projects[projNumber] = projectName
-            # print(self.__projects)
 
         for scenarioName in self.getProjects():
             projNumber = self.getProjectID(projectName)
             self.__projects[projNumber] = projectName
-            # print(self.__projects)
 
     ##################### FUNCTIONAL #################
 
     def __parseOutputAsTable(self, stringCommand:str):
         terminalOutput = str(sp.check_output(stringCommand), 'utf-8')
         commaSeparated1 = terminalOutput.replace(',', '*')
-        # print("1")
-        # print(commaSeparated1)
-        # print()
         commaSeparated2 = commaSeparated1.replace('\r', '')
-        # print("1")
-        # print(commaSeparated2)
-        # print()
         commaSeparated3 = re.sub('{}+'.format(2*' '), ',', commaSeparated2)
-        # print(commaSeparated3)
         commaSeparated4 = commaSeparated3.replace(',\n', '\n')
-        # print(commaSeparated4)
         commaSeparated5 = commaSeparated4.replace(' ', '')
-        # print(commaSeparated5)
         asTable = pd.read_csv(io.StringIO(commaSeparated5))
         return asTable
 
@@ -70,7 +59,7 @@ class Syncro:
         self.__projects[newProjectNumber] = newProjectName
         return newProjectNumber
 
-    # assuming that all scenario names in the same project are the same
+    # assuming that all scenario names in the same project are unique
     def newScenario(self, newScenarioName:str, secondParameter):
         parentProjectNumber = None
         if isinstance(secondParameter, str):

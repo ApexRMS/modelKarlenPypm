@@ -2,11 +2,11 @@
 <package name="modelKarlenPypm" displayName="Add-On to the Epidemic Package for the Karlen model" isAddOn="True" extendsPackage="epi" version="1.0.0">
   <transformers>
     <transformer
-      name="modelKaylenPypm_Parameters"
+      name="modelKarlenPypm_defaults"
       isPrimary="True"
-      displayName="modelKarlenPypm_Download"
+      displayName="Get Default Parameters"
       programName="spyder"
-      programArguments="getDefaultParameterValues.py"
+      programArguments="defaults.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
       isRunnable ="True">
@@ -26,7 +26,7 @@
           <datasheets>
             <datasheet name="ParameterValues" displayname="Parameter Values">
               <columns>
-                <!-- <column name="InputDatasheetID" dataType="Integer"/> -->
+                <!-- <column name="InputID" dataType="Integer" isPrimary="True"/> -->
                 <column name="ScenarioID" dataType="Integer" isPrimary="True"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
@@ -48,7 +48,7 @@
   </transformers>
   <layouts>
     <layout name="coreforms_LibraryDatafeeds">
-      <item name="core_PyConfig"/>
+      <item name="core_RConfig"/>
     </layout>
     <layout name="coreforms_ScenarioDataFeeds">
       <item name="ParameterValues" appendTo="epi_Outputs"/>

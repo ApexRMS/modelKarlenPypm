@@ -8,6 +8,8 @@ import pypmca
 
 import pandas as pd
 
+# "C:\Users\User\AppData\Local\Programs\Python\Python39\Scripts\spyder.exe"
+
 # from headerFile import *
 
 from syncro import Syncro
@@ -67,8 +69,8 @@ try:
 except Halt as hl:
     print(hl);
 
-model.save_file('{}.temp\\downloadedScenario.pypm'.format(library_path))
-
+# model.save_file('{}.temp\\downloadedScenario.pypm'.format(library_path))
+model.save_file('C:\\Users\\User\\Documents\\SyncroSim\\Libraries\\epi.ssim.temp\\downloadedScenario.pypm')
 
 PARAMETER_ATTIBUTES = ['name', 'description', 'parameter_type', 'initial_value', 'parameter_min', 'parameter_max', 'mcmc_step', 'prior_function']
 Parameters = dict()
