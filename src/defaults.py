@@ -1,24 +1,19 @@
 #!/usr/bin/python
 
 import requests
-import os
-import sys
-import pickle
-import pypmca
-
+import numpy as np
 import pandas as pd
 
 # "C:\Users\User\AppData\Local\Programs\Python\Python39\Scripts\spyder.exe"
 
-# from headerFile import *
-
-from syncro import Syncro
+import headerFile
+import syncro
 
 console_path = 'C:\\Program Files\\SyncroSim'
 library_path = 'C:\\Users\\User\\Documents\\SyncroSim\\Libraries\\epi.ssim'
 theConsole = '{}\\SyncroSim.Console.exe'.format(console_path)
 
-ss = Syncro(console_path, library_path)
+ss = syncro.Syncro(console_path, library_path)
 hereProj = ss.newProject('Definitions')
 myScenario = ss.newScenario('myScenario', hereProj)
 
@@ -61,7 +56,7 @@ except requests.exceptions.RequestException as error:
 
 myPickle = pypmResponse.content
 filename = modelFn.split('/')[-1]
-model = openModel(filename, myPickle);
+model = headerFile.openModel(filename, myPickle);
 
 try:
     if isinstance(model, type(None)):
@@ -102,13 +97,32 @@ ParameterFrame = pd.DataFrame()
 for key in Parameters.keys():
     ParameterFrame[key] = Parameters[key]
 
+# suggest MCMC step values
+# recommended MCMC step is half of the standard deviation
+variables_with_N_priors = list(ParameterFrame[ParameterFrame.prior_function == 'norm'].index)
+ParameterFrame.loc[variables_with_N_priors, 'mcmc_step'] = 0.5*ParameterFrame.loc[variables_with_N_priors, 'prior_second']
+
+variables_with_U_priors = list(ParameterFrame[ParameterFrame.prior_function == 'uniform'].index)
+ParameterFrame.loc[variables_with_U_priors, 'mcmc_step'] = 1/np.sqrt(12)*ParameterFrame.loc[variables_with_U_priors, 'prior_second']
+
 # changing the order of the output table
 ParameterFrame = ParameterFrame[['name', 'description', 'parameter_type', 'initial_value', 'parameter_min', 'parameter_max', 'status', 'prior_function', 'prior_mean', 'prior_second', 'mcmc_step']]
 
-defaultParameters = ss.getDatasheet(myScenario, "modelKarlenPypm_ParameterValues")
+# get the empty data sheet
+defaultParameters = ss.getDatasheet(myScenario, "modelKarlenPypm_ParameterValues", empty=True)
 
+# assignn the values
 defaultParameters.Name = ParameterFrame.name
+defaultParameters.Description = ParameterFrame.description
+defaultParameters.Type = ParameterFrame.parameter_type
+defaultParameters.Initial = ParameterFrame.initial_value
+defaultParameters.Min = ParameterFrame.parameter_min
+defaultParameters.Max = ParameterFrame.parameter_max
+defaultParameters.Status = ParameterFrame.status
+defaultParameters.PriorDist = ParameterFrame.prior_function
+defaultParameters.PriorMean = ParameterFrame.prior_mean
+defaultParameters.PriorSecond = ParameterFrame.prior_second
+defaultParameters.MCMCStep = ParameterFrame.mcmc_step
 
-# ParameterFrame.to_csv('{}\\{}.csv'.format(OUTPUT_FOLDER, PARAMETER_FILE_NAME), index=False)
-
+# save the datasheet
 ss.saveDatasheet(myScenario, defaultParameters, "modelKarlenPypm_ParameterValues")

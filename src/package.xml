@@ -4,30 +4,19 @@
     <transformer
       name="modelKarlenPypm_defaults"
       isPrimary="True"
-      displayName="Get Default Parameters"
-      programName="spyder"
+      displayName="modelKarlenPypm_defaults"
+      programName="python"
       programArguments="defaults.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
       isRunnable ="True">
       <datafeeds>
-        <!-- <datafeed name="PyConfig" displayName="Python Configuration" dataScope="Library">
-          <datasheets>
-            <datasheet name="Python Configuration" displayName="Python Configuration" isSingleRow="True">
-              <columns>
-                <column name="RConfigID" dataType="Integer" isPrimary="True"/>
-                <column name="ExePath" dataType="String"/>
-                <column name="RunInWindow" dataType="Boolean"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed> -->
         <datafeed name="ParameterValues" displayName="Parameter Values" dataScope="Scenario">
           <datasheets>
             <datasheet name="ParameterValues" displayname="Parameter Values">
               <columns>
-                <!-- <column name="InputID" dataType="Integer" isPrimary="True"/> -->
-                <column name="ScenarioID" dataType="Integer" isPrimary="True"/>
+                <column name="ParameterValuesID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
                 <column name="Type" dataType="String" displayName="Variable Type"/>
@@ -50,8 +39,8 @@
     <layout name="coreforms_LibraryDatafeeds">
       <item name="core_RConfig"/>
     </layout>
-    <layout name="coreforms_ScenarioDataFeeds">
-      <item name="ParameterValues" appendTo="epi_Outputs"/>
+    <layout name="coreforms_ScenarioDatafeeds">
+      <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/>
     </layout>
   </layouts>
 </package>

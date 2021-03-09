@@ -155,26 +155,6 @@ class Syncro:
             else:
                 return theTable
 
-    ##################### BROKEN #################
-
-    def getDatafeeds(self):
-        cmdLine = '{} --lib={} --list --datafeeds'.format(self.__theConsole, self.__libraryPath)
-        print(cmdLine)
-        sp.call(cmdLine)
-
-
-    def getModels(self):
-        cmdLine = '{} --lib={} --list --models'.format(self.__theConsole, self.__libraryPath)
-        print(cmdLine)
-        sp.call(cmdLine)
-
-
-    def getLibrary(self):
-        cmdLine = '{} --lib={} --list --library'.format(self.__theConsole, self.__libraryPath)
-        sp.call(cmdLine)
-        asTable = self.__parseOutputAsTable(cmdLine)
-        return asTable
-
     def saveDatasheet(self, scenarioID:int, dataSheet:pd.core.frame.DataFrame, sheetGivenName:str):
         if dataSheet.shape[0] == 0:
             return None
@@ -187,6 +167,24 @@ class Syncro:
         shutil.rmtree(tempDir)
         return None
 
+    ##################### BROKEN #################
+
+    def getDatafeeds(self):
+        cmdLine = '{} --lib={} --list --datafeeds'.format(self.__theConsole, self.__libraryPath)
+        print(cmdLine)
+        sp.call(cmdLine)
+
+    def getModels(self):
+        cmdLine = '{} --lib={} --list --models'.format(self.__theConsole, self.__libraryPath)
+        print(cmdLine)
+        sp.call(cmdLine)
+
+    def getLibrary(self):
+        cmdLine = '{} --lib={} --list --library'.format(self.__theConsole, self.__libraryPath)
+        sp.call(cmdLine)
+        asTable = self.__parseOutputAsTable(cmdLine)
+        return asTable
+
 console_path = 'C:\\Program Files\\SyncroSim'
 library_path = 'C:\\Users\\User\\Documents\\SyncroSim\\Libraries\\modelKarlenPypm.ssim'
 theConsole = '{}\\SyncroSim.Console.exe'.format(console_path)
@@ -194,35 +192,3 @@ theConsole = '{}\\SyncroSim.Console.exe'.format(console_path)
 ss = Syncro(console_path, library_path)
 hereProj = ss.newProject('Definitions')
 myScenario = ss.newScenario('myScenario', hereProj)
-
-
-# paramValues = ss.getDatasheet(scen_number, "modelKarlenPypm_ParameterValues", empty=True)
-# new_row = pd.Series({'Name':'lolsjhsiodfghojsa', 'Description':'foosadjfklas;jnkdfcvl', 'Type':'int', 'Initial':2, 'Min':1, 'Max':3 , 'Status':'variable', 'PriorDist':'norm', 'PriorMean':2, 'PriorSecond':1, 'MCMCStep':0.03})
-# paramValues = paramValues.append(new_row, ignore_index=True)
-# # parameterValues["ScenarioID"] = [scen_number]
-
-# paramValues.to_csv("export.csv", index=False)
-
-
-# ss.saveDatasheet(scen_number, paramValues, "modelKarlenPypm_ParameterValues")
-
-# # paramValues['ScenarioID'] = [scen_number]
-
-# ss.saveDatasheet(scen_number, paramValues, "modelKarlenPypm_ParameterValues")
-
-
-# cmdLine = '{} --lib={} --file={} --list --scenarios --csv'.format(theConsole, library_path, "C:\\Users\\User\\Documents\\GitHub\\modelKarlenPypm\\export.csv")
-
-
-# terminalOutput = str(sp.check_output(cmdLine), 'utf-8')
-# commaSeparated1 = terminalOutput.replace(',', '*')
-# commaSeparated2 = commaSeparated1.replace('\r', '')
-# commaSeparated3 = re.sub('{}+'.format(3*' '), ',', commaSeparated2)
-# commaSeparated4 = commaSeparated3.replace(',\n', '\n')
-# asTable = pd.read_csv(io.StringIO(commaSeparated4))
-#
-# text_file = open("C:\\Users\\User\\Documents\\Github\\modelKarlenPypm\\foobar.txt", "w")
-# text_file.write(commaSeparated3)
-# text_file.close()
-
-# lols = sp.check_output(cmdLine)
