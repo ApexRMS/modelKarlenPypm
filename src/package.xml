@@ -2,6 +2,31 @@
 <package name="modelKarlenPypm" displayName="Add-On to the Epidemic Package for the Karlen model" isAddOn="True" extendsPackage="epi" version="1.0.0">
   <transformers>
     <transformer
+      name="modelKarlenPypm_fetchModels"
+      isPrimary="True"
+      displayName="modelKarlenPypm_fetchModels"
+      programName="spyder"
+      programArguments="fetchModels.py"
+      extendsTransformer="epi_Primary"
+      runContext="LocalOnly"
+      isRunnable ="True">
+      <datafeeds>
+        <datafeed name="ModelsAvailable" displayName="Models Available" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ModelsAvailable" displayname="Models Available">
+              <columns>
+                <column name="ModelsAvailableID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="Region" dataType="String" displayName="Parameter Name"/>
+                <column name="Name" dataType="String" displayName="Variable Type"/>
+                <column name="Description" dataType="String" displayName="Description"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+      </datafeeds>
+    </transformer>
+    <!-- <transformer
       name="modelKarlenPypm_defaults"
       isPrimary="True"
       displayName="modelKarlenPypm_defaults"
@@ -33,14 +58,15 @@
           </datasheets>
         </datafeed>
       </datafeeds>
-    </transformer>
+    </transformer> -->
   </transformers>
   <layouts>
     <layout name="coreforms_LibraryDatafeeds">
       <item name="core_RConfig"/>
     </layout>
     <layout name="coreforms_ScenarioDatafeeds">
-      <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/>
+      <!-- <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/> -->
+      <item name="ModelsAvailable" displayName="Models Available" appendTo="epi_Sources"/>
     </layout>
   </layouts>
 </package>
