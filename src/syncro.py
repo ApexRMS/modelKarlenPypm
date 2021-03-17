@@ -53,20 +53,20 @@ class scenario:
     datasheetNames = pandas.DataFrame()
     console = ""
 
-    def __init__(self, enviro:pandas.Series=None):
+    def __init__(self, env:pandas.Series=None):
 
-        if enviro == None:
-            enviro = ssimEnvironment()
+        if env == None:
+            env = ssimEnvironment()
 
-        self.projectId = int(enviro.ProjectId)
-        self.scenarioId = int(enviro.ScenarioId)
+        self.projectId = int(env.ProjectId)
+        self.scenarioId = int(env.ScenarioId)
         self.parentId = None
         self.breakpoints = []
-        self.session = [enviro.ProgramDirectory, False]
-        self.filepath = enviro.LibraryFilePath
+        self.session = [env.ProgramDirectory, False]
+        self.filepath = env.LibraryFilePath
         self.console = '{}\\SyncroSim.Console.exe'.format(ssimEnvironment().ProgramDirectory)
 
-        cmdLine = '"{}" --list --datasheets --lib={}'.format(self.console, enviro.LibraryFilePath)
+        cmdLine = '"{}" --list --datasheets --lib={}'.format(self.console, env.LibraryFilePath)
         # print(type(parseOutputAsTable(cmdLine)))
         self.datasheetNames = parseOutputAsTable(cmdLine)
 
@@ -113,19 +113,31 @@ def datasheet(theScenario:scenario, datasheetName:str=None, empty:bool=False):
         else:
             return theTable
 
-def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, sheetGivenName:str):
+def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, datasheetName:str):
 
-    if dataSheet.shape[0] == 0:
+    getDatasheetsLine = '"{}" --list --datasheets --lib={}'.format(theScenario.console, theScenario.filepath)
+    currentDatasheets = parseOutputAsTable(getDatasheetsLine)
+
+    if datasheetName not in list(currentDatasheets.Name):
+        print("ERROR: no table by that name")
+        return None
+    elif dataSheet.shape[0] == 0:
+        print("ERROR: empty data sheet")
         return None
 
     tempDir = tempfile.mkdtemp()
     exportFilename = '{}\\export.csv'.format(tempDir)
     dataSheet.to_csv(exportFilename, index=False)
     cmdLine = '"{}" --import --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
-        theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, sheetGivenName, exportFilename
+        theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
     )
     subprocess.call(cmdLine)
     shutil.rmtree(tempDir)
+
+    env = ssimEnvironment()
+    exportFilename2 = '{}\\SSIM_OVERWRITE-{}.csv'.format(env.TransferDirectory, datasheetName)
+    dataSheet.to_csv(exportFilename2, index=FALSE)
+
     return None
 
 
