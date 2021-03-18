@@ -5,7 +5,6 @@ for i in list(globals().keys()):
 import os
 import io
 import re
-import numpy
 import pandas
 import subprocess
 import tempfile
@@ -136,7 +135,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 
     env = ssimEnvironment()
     exportFilename2 = '{}\\SSIM_OVERWRITE-{}.csv'.format(env.TransferDirectory, datasheetName)
-    dataSheet.to_csv(exportFilename2, index=FALSE)
+    dataSheet.to_csv(exportFilename2, index=False)
 
     return None
 

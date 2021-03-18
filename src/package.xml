@@ -20,6 +20,7 @@
                 <column name="Region" dataType="String" displayName="Parameter Name"/>
                 <column name="Name" dataType="String" displayName="Variable Type"/>
                 <column name="Description" dataType="String" displayName="Description"/>
+                <column name="URL" dataType="String" displayName="Model Download URL"/>
               </columns>
             </datasheet>
           </datasheets>
