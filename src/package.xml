@@ -62,8 +62,9 @@
         </datafeed>
       </datafeeds>
       <pipeline>
-        <datafeed name="ParameterValues" type="Output"/>
-        <datafeed name="epi_RunControl" type="Input"/>
+        <datafeed name="ModelsAvailable" type="Output"/>
+        <datafeed name="ParameterValues" type="Both"/>
+        <datafeed name="epi_RunControl" type="Both"/>
       </pipeline>
     </transformer>
   </transformers>
