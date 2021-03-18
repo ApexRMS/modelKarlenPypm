@@ -10,6 +10,8 @@ import subprocess
 import tempfile
 import shutil
 
+pandas.set_option('display.max_columns', None)
+pandas.set_option('display.width', 1000)
 
 def ssimEnvironment():
 

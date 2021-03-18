@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 for i in list(globals().keys()):
     if(i[0] != '_'):
         exec('del {}'.format(i))
@@ -11,6 +13,7 @@ import pypmca
 import pycountry
 import subprocess
 import pandas
+
 from syncro import *
 
 def openModel(my_pickle):

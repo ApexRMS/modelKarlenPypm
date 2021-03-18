@@ -27,14 +27,14 @@
         </datafeed>
       </datafeeds>
       <include>
-        <transformer name="modelKarlenPypm_defaultParameters"/>
+        <transformer name="modelKarlenPypm_fetchParameters"/>
       </include>
     </transformer>
     <transformer
-      name="modelKarlenPypm_defaultParameters"
-      displayName="modelKarlenPypm_defaultParameters"
+      name="modelKarlenPypm_fetchParameters"
+      displayName="modelKarlenPypm_fetchParameters"
       programName="spyder"
-      programArguments="defaults.py"
+      programArguments="defaultParameters.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
       isRunnable ="True">
@@ -62,8 +62,8 @@
         </datafeed>
       </datafeeds>
       <pipeline>
-        <datafeed name="ModelsAvailable" type="Output"/>
-        <datafeed name="ParameterValues" type="Input"/>
+        <datafeed name="ParameterValues" type="Output"/>
+        <datafeed name="epi_RunControl" type="Input"/>
       </pipeline>
     </transformer>
   </transformers>
@@ -74,6 +74,7 @@
     <layout name="coreforms_ScenarioDatafeeds">
       <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/>
       <item name="ModelsAvailable" displayName="Models Available" appendTo="epi_Sources"/>
+      <!-- <item name="epi_RuntimeJurisdiction"/> -->
     </layout>
   </layouts>
 </package>
