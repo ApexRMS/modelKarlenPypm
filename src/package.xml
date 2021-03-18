@@ -17,8 +17,8 @@
               <columns>
                 <column name="ModelsAvailableID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Region" dataType="String" displayName="Parameter Name"/>
-                <column name="Name" dataType="String" displayName="Variable Type"/>
+                <column name="Region" dataType="String" displayName="Region Name"/>
+                <column name="Name" dataType="String" displayName="Model Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
                 <column name="URL" dataType="String" displayName="Model Download URL"/>
               </columns>
@@ -26,12 +26,14 @@
           </datasheets>
         </datafeed>
       </datafeeds>
+      <include>
+        <transformer name="modelKarlenPypm_defaultParameters"/>
+      </include>
     </transformer>
-    <!-- <transformer
-      name="modelKarlenPypm_defaults"
-      isPrimary="True"
-      displayName="modelKarlenPypm_defaults"
-      programName="python"
+    <transformer
+      name="modelKarlenPypm_defaultParameters"
+      displayName="modelKarlenPypm_defaultParameters"
+      programName="spyder"
       programArguments="defaults.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
@@ -59,14 +61,18 @@
           </datasheets>
         </datafeed>
       </datafeeds>
-    </transformer> -->
+      <pipeline>
+        <datafeed name="ModelsAvailable" type="Output"/>
+        <datafeed name="ParameterValues" type="Input"/>
+      </pipeline>
+    </transformer>
   </transformers>
   <layouts>
     <layout name="coreforms_LibraryDatafeeds">
       <item name="core_RConfig"/>
     </layout>
     <layout name="coreforms_ScenarioDatafeeds">
-      <!-- <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/> -->
+      <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/>
       <item name="ModelsAvailable" displayName="Models Available" appendTo="epi_Sources"/>
     </layout>
   </layouts>

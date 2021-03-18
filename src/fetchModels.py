@@ -36,14 +36,20 @@ def ageRange(modelName:str):
     if any([substring in firstBit for substring in ['under', 'less']]):
         return 'under {}'.format(getSubinteger(firstBit))
 
-    if any([substring in firstBit for substring in ['over', 'plus']]):
+    elif any([substring in firstBit for substring in ['over', 'plus']]):
         # extra space to make sure that all strings are the same length
         return ' over {}'.format(getSubinteger(firstBit))
 
-    if 'to' in firstBit:
+    elif 'to' in firstBit:
         subStrs = firstBit.split('to')
         fromAge = getSubinteger(subStrs[0])
         toAge = getSubinteger(subStrs[1])
+        return '{} -> {}'.format(fromAge, toAge)
+
+    # 'bc60_2_3_0911', etc
+    elif bool(re.search(r'\d', firstBit)):
+        fromAge = getSubinteger(firstBit)
+        toAge = fromAge + 9
         return '{} -> {}'.format(fromAge, toAge)
 
     return 8*' '
@@ -56,25 +62,32 @@ def regionInfo(countryName:str, modelName:str):
     iso3166Code = ''
     finalName = ''
 
+    # regionInfo('USA', 'oh_2_8_0316')
     if countryName == 'USA':
         countryName = 'United States'
+    # regionInfo('California', 'ca65plus_2_5_1005.pypm'))
     elif countryName == 'California':
         countryName = 'United States'
-    # elif countryName == moda'
 
     # if it's actually a country we were given:
     if countryName in [x.name for x in pycountry.countries]:
+        # regionInfo('Canada', ' qc_2_8_0311.pypm')
         countryCode = pycountry.countries.get(name=countryName).alpha_2
         iso3166Code = '{}-{}'.format(countryCode, twoLetter)
         finalName = pycountry.subdivisions.get(code=iso3166Code).name
 
     elif countryName == 'EU':
+        # regionInfo('EU', 'it_2_8_0224.pypm')
         localeInfo = pycountry.countries.get(alpha_2=twoLetter)
         iso3166Code = '{}-{}'.format(countryName, twoLetter)
         finalName = localeInfo.name
 
     elif countryName == 'reference':
-        finalName = countryName.title()
+        # regionInfo('reference', 'ref_model_2.pypm')
+        # get the numbers from the string
+        theDigits = [x for x in modelName.replace('.pypm', '').split('_') if x.isdigit()]
+        # print the digits at the end
+        finalName = '{} ({})'.format(countryName.title(), ' '.join(theDigits))
 
     if countryName == 'BC':
 
@@ -87,88 +100,81 @@ def regionInfo(countryName:str, modelName:str):
         }
 
         iso3166Code = 'CA-BC'
+
         if twoLetter == 'BC':
+            # regionInfo('BC', 'bc60_2_3_0911.pypm')
             finalName = 'British Columbia'
         else:
+            # regionInfo('BC', 'interior_2_8_0309.pypm')
             finalName = lut[ theSplit[0] ].title()
 
-    return '({:5}) {}'.format(iso3166Code, finalName)
-
-# print(regionInfo('Canada', ' qc_2_8_0311.pypm'))
-# print(regionInfo('EU', 'it_2_8_0224.pypm'))
-# print(regionInfo('reference', 'ref_model_2.pypm'))
-# print(regionInfo('USA', 'oh_2_8_0316'))
-# print(regionInfo('California', 'ca65plus_2_5_1005.pypm'))
-# print(regionInfo('Germany', 'st_2_8_0307.pypm'))
-# print(regionInfo('Brazil', 'pr_2_3_0624_d.pypm'))
-# print(regionInfo('BC', 'bc60_2_3_0911.pypm'))
-
-print(regionInfo('BC', 'interior_2_8_0309.pypm'))
-
-# jurisDictionary = {}
-
-# foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
-# countryFolders = foldersResponse.json()
-# countryList = list(countryFolders.keys())
-
-# modelsAvailable = []
-
-# for country in ["BC"]: # countryList:
-
-#     folder = countryFolders[country]
-#     countryName = folder.split('/')[-1]
-
-#     modelsResponse = requests.get('http://data.ipypm.ca/list_models/{}'.format(folder))
-
-#     modelFilenames = modelsResponse.json()
-#     modelList = list(modelFilenames.keys())
-
-#     for modelName in modelList:
-
-#         modelFn = modelFilenames[modelName]
-#         filename = modelFn.split('/')[-1]
-
-#         modelURL = 'http://data.ipypm.ca/get_pypm/{}'.format(modelFn)
-
-#         modelsAvailable.append({
-#             # 'Region': regionInfo(countryName, filename),
-#             'Name': filename,
-#             # 'Description': modelDescrip,
-#             'URL' : modelURL
-#         })
-
-        # break
-
-#         pypmResponse = requests.get(modelURL, stream=True)
-
-#         myPickle = pypmResponse.content
-#         model = openModel(myPickle)
-
-#         model.save_file('{}.temp\\{}'.format(env.LibraryFilePath, filename))
-#         modelDescrip = model.description.replace('\"', '').replace('\'', '')
-
-#         jurisDictionary[fullModelName] = modelDescrip
+    return '({:5}) {:26}'.format(iso3166Code, finalName)
 
 
-#         # break
+jurisDictionary = {}
 
-    # break
+foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
+countryFolders = foldersResponse.json()
+countryList = list(countryFolders.keys())
+
+modelsAvailable = []
+
+for country in countryList:
+
+    folder = countryFolders[country]
+    countryName = folder.split('/')[-1]
+
+    modelsResponse = requests.get('http://data.ipypm.ca/list_models/{}'.format(folder))
+
+    modelFilenames = modelsResponse.json()
+    modelList = list(modelFilenames.keys())
+
+    for modelName in modelList:
+
+        modelFn = modelFilenames[modelName]
+        filename = modelFn.split('/')[-1]
+
+        modelURL = 'http://data.ipypm.ca/get_pypm/{}'.format(modelFn)
+
+        # pypmResponse = requests.get(modelURL, stream=True)
+
+        # myPickle = pypmResponse.content
+        # model = openModel(myPickle)
+
+        modelsAvailable.append({
+            'Region': '{} {}'.format(regionInfo(countryName, filename), ageRange(filename)),
+            'Name': filename,
+            # 'Description': model.description,
+            'URL' : modelURL
+        })
 
 
-# theJurisdictions = datasheet(myScenario, 'epi_Jurisdiction', empty=True)
-# theJurisdictions = theJurisdictions.drop(columns=['JurisdictionID'])
+modelsAvail = pandas.DataFrame(modelsAvailable)
 
-# theJurisdictions.Name = pandas.Series(jurisDictionary.keys())
-# theJurisdictions.Description = pandas.Series(jurisDictionary.values())
+duplicateRegions = list(set(modelsAvail.Region[modelsAvail.Region.duplicated()]))
+repeatedIndices = modelsAvail.index[modelsAvail['Region'].isin(duplicateRegions)]
 
-# modelsAvail = pandas.DataFrame(modelsAvailable).drop(columns=['URL'])
+for index in repeatedIndices:
+    modelName = modelsAvail.Name[index]
+    date = modelName.split('_')[-1].replace('.pypm', '')
+    newDate = '({}/{})'.format(date[:2], date[2:])
+    regionName = modelsAvail.Region[index]
+    modelsAvail.iloc[index]['Region'] = regionName[:-7] + newDate
 
-# theModels = datasheet(myScenario, "modelKarlenPypm_ModelsAvailable", empty=True)
-# theModels = theModels.drop(columns=['ModelsAvailableID'])
+theJurisdictions = datasheet(myScenario, 'epi_Jurisdiction', empty=True)
+theJurisdictions = theJurisdictions.drop(columns=['JurisdictionID'])
 
-# theModels.Region = modelsAvail.Region
-# theModels.Name = modelsAvail.Name
-# theModels.URL = modelsAvail.URL
+theJurisdictions.Name = modelsAvail.Region
+theJurisdictions.Description = modelsAvail.URL
+
+saveDatasheet(myScenario, theJurisdictions, "epi_Jurisdiction")
+
+theModels = datasheet(myScenario, "modelKarlenPypm_ModelsAvailable", empty=True)
+theModels = theModels.drop(columns=['ModelsAvailableID'])
+
+theModels.Region = modelsAvail.Region
+theModels.Name = modelsAvail.Name
+theModels.URL = modelsAvail.URL
 # theModels.Description = [re.sub('[\'\"]', '', desc) for desc in modelsAvail.Description]
 
-# saveDatasheet(myScenario, theModels, "modelKarlenPypm_ModelsAvailable")
+saveDatasheet(myScenario, theModels, "modelKarlenPypm_ModelsAvailable")
