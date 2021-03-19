@@ -1,10 +1,8 @@
 #!/usr/bin/python
 
-import os
-import copy
 import pypmca
-import numpy as np
-import pandas as pd
+import numpy
+import pandas
 
 from pypmca.analysis.Optimizer import Optimizer
 
@@ -12,7 +10,7 @@ from headerFile import *
 
 theModel = pypmca.Model.open_file('{}\\{}.pypm'.format(OUTPUT_FOLDER, DOWNLOADED_MODEL_NAME))
 
-ParameterFrame = pd.read_csv('{}\\{}.csv'.format(OUTPUT_FOLDER, PARAMETER_FILE_NAME), sep=',')
+ParameterFrame = pandas.read_csv('{}\\{}.csv'.format(OUTPUT_FOLDER, PARAMETER_FILE_NAME), sep=',')
 
 for index in range(0, ParameterFrame.shape[0]):
 
@@ -38,7 +36,7 @@ for index in range(0, ParameterFrame.shape[0]):
 		if ParameterFrame['prior_function'][index] == 'uniform':
 			prior_params = {'mean': ParameterFrame['prior_mean'][index], 'half_width' : ParameterFrame['prior_second'][index]}
 			# var=(b-a)/12, hw=(b-a)/2, so that sd=hw/sqrt(6)
-			theModel.parameters[name].mcmc_step = 0.5*ParameterFrame['prior_second'][index]/np.sqrt(6)
+			theModel.parameters[name].mcmc_step = 0.5*ParameterFrame['prior_second'][index]/numpy.sqrt(6)
 		elif ParameterFrame['prior_function'][index] == 'normal':
 			prior_params = {'mean' : ParameterFrame['prior_mean'][index], 'sigma' : ParameterFrame['prior_second'][index]}
 			# mcmc default step half the standard deviation
@@ -63,9 +61,9 @@ theModel.save_file('{}\\{}.pypm'.format(OUTPUT_FOLDER, FINAL_SCENARIO_NAME))
 '''
 file name in the next line is just a shortcut. will figure this out later
 '''
-DT = pd.read_csv('{}\\{}.csv'.format('C:\\Users\\User\\Documents\\GitHub\\modelKarlenPypm\\src', EMPIRICAL_DATA_FILE))
+DT = pandas.read_csv('{}\\{}.csv'.format('C:\\Users\\User\\Documents\\GitHub\\modelKarlenPypm\\src', EMPIRICAL_DATA_FILE))
 
-real_data = np.array(DT[DT.Jurisdiction == REGION_NAME][DT.Iteration == 1].Value)
+real_data = numpy.array(DT[DT.Jurisdiction == REGION_NAME][DT.Iteration == 1].Value)
 pmodel = pypmca.Model.open_file('{}\\{}.pypm'.format(OUTPUT_FOLDER, FINAL_SCENARIO_NAME))
 pmodel.reset()
 
@@ -102,13 +100,13 @@ simDict = dict()
 
 # the Date column seems to screw with the XML, so we leave that out for now
 
-tempTable = pd.DataFrame()
+tempTable = pandas.DataFrame()
 pmodel.reset()
 pmodel.evolve_expectations(len(real_data))
 for pop in pmodel.populations.keys():
     if pop != 'frac':
         tempTable[pop] = pmodel.populations[pop].history
-tempTable['Iteration'] = np.nan
+tempTable['Iteration'] = numpy.nan
 # tempTable['date'] = DT.Date
 daily_row = delta(tempTable['infected'])
 tempTable = tempTable[0:len(real_data)]
@@ -119,7 +117,7 @@ tempTable['time_step'] = list(range(1, tempTable.shape[0]+1))
 simDict['expectations'] = tempTable
 
 for iter in range(NUM_ITERATIONS):
-    tempTable = pd.DataFrame()
+    tempTable = pandas.DataFrame()
     pmodel.reset()
     pmodel.generate_data(len(real_data))
     for pop in pmodel.populations.keys():
@@ -134,7 +132,7 @@ for iter in range(NUM_ITERATIONS):
 
     simDict[str(iter)] = tempTable
 
-All_Data = pd.concat(simDict.values(), ignore_index=False)
+All_Data = pandas.concat(simDict.values(), ignore_index=False)
 All_Data.columns = [camelify(x) for x in All_Data.columns]
 
 these_first = ['Iteration', 'TimeStep', 'TrueReported', 'DailyInfected', 'Infected', 'Total']

@@ -5,16 +5,17 @@ for i in list(globals().keys()):
         exec('del {}'.format(i))
 
 import requests
-import os
-
-import sys
 import pickle
-import pypmca
 import pycountry
-import subprocess
 import pandas
 
 from syncro import *
+
+def unaccumulate(a):
+    return [a[0]] + [t - s for s, t in zip(a, a[1:])]
+
+def camelify(x):
+	return ''.join(i.capitalize() for i in x.replace('_', ' ').replace(',', ' ').split(' '))
 
 def openModel(my_pickle):
     model = pickle.loads(my_pickle)
@@ -25,8 +26,16 @@ def openModel(my_pickle):
         print('Currently, ipypm only supports models with time_step = 1 day.')
     return model
 
-env = ssimEnvironment()
-myScenario = scenario()
+def downloadModel(theURL):
+    try:
+        modelResponse = requests.get(theURL);
+    except requests.exceptions.RequestException as error:
+        print('Error retrieving model folder list over network:')
+        print()
+        print(error)
+        return None
+    myPickle = modelResponse.content
+    return openModel(myPickle)
 
 def getSubinteger(string:str):
     numString = ''.join([s for s in list(string) if s.isdigit()])
@@ -114,6 +123,9 @@ def regionInfo(countryName:str, modelName:str):
     return '({:5}) {:26}'.format(iso3166Code, finalName)
 
 
+env = ssimEnvironment()
+myScenario = scenario()
+
 jurisDictionary = {}
 
 foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
@@ -139,18 +151,11 @@ for country in countryList:
 
         modelURL = 'http://data.ipypm.ca/get_pypm/{}'.format(modelFn)
 
-        # pypmResponse = requests.get(modelURL, stream=True)
-
-        # myPickle = pypmResponse.content
-        # model = openModel(myPickle)
-
         modelsAvailable.append({
             'Region': '{} {}'.format(regionInfo(countryName, filename), ageRange(filename)),
             'Name': filename,
-            # 'Description': model.description,
             'URL' : modelURL
         })
-
 
 modelsAvail = pandas.DataFrame(modelsAvailable)
 
@@ -178,6 +183,5 @@ theModels = theModels.drop(columns=['ModelsAvailableID'])
 theModels.Region = modelsAvail.Region
 theModels.Name = modelsAvail.Name
 theModels.URL = modelsAvail.URL
-# theModels.Description = [re.sub('[\'\"]', '', desc) for desc in modelsAvail.Description]
 
 saveDatasheet(myScenario, theModels, "modelKarlenPypm_ModelsAvailable")

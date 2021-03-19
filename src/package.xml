@@ -19,15 +19,19 @@
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="Region" dataType="String" displayName="Region Name"/>
                 <column name="Name" dataType="String" displayName="Model Name"/>
-                <column name="Description" dataType="String" displayName="Description"/>
+                <!-- <column name="Description" dataType="String" displayName="Description"/> -->
                 <column name="URL" dataType="String" displayName="Model Download URL"/>
               </columns>
             </datasheet>
           </datasheets>
         </datafeed>
       </datafeeds>
+      <pipeline>
+        <datafeed name="ModelsAvailable" type="Output"/>
+      </pipeline>
       <include>
         <transformer name="modelKarlenPypm_fetchParameters"/>
+        <transformer name="modelKarlenPypm_runIterations"/>
       </include>
     </transformer>
     <transformer
@@ -60,11 +64,97 @@
             </datasheet>
           </datasheets>
         </datafeed>
+        <datafeed name="ModelFile" displayName="Downloadeded Model" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ModelFile" displayName="Downloaded Model" isSingeRow="True">
+              <columns>
+                <column name="ModelFileID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="Region" dataType="String" displayName="Region"/>
+                <column name="Name" dataType="String" displayName="Name"/>
+                <column name="URL" dataType="String" displayName="URL"/>
+                <column name="PypmFile" displayName="Object File" dataType="String" isExternalFile="True"/>
+                <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
       </datafeeds>
       <pipeline>
-        <datafeed name="ModelsAvailable" type="Output"/>
-        <datafeed name="ParameterValues" type="Both"/>
-        <datafeed name="epi_RunControl" type="Both"/>
+        <datafeed name="ParameterValues" type="Output"/>
+        <datafeed name="ModelFile" type="Output"/>
+        <datafeed name="epi_RunControl" type="Input"/>
+      </pipeline>
+    </transformer>
+    <transformer
+      name="modelKarlenPypm_runIterations"
+      displayName="modelKarlenPypm_runIterations"
+      programName="spyder"
+      programArguments="runIterations.py"
+      extendsTransformer="epi_Primary"
+      runContext="LocalOnly"
+      isRunnable ="True">
+      <datafeeds>
+        <datafeed name="FittingParams" displayName="Fitting Parameters" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="FittingParams" displayName="Fitting Parameters" isSingleRow="True">
+              <columns>
+                <column name="FittingParamsID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="DaysToFit" dataType="String" displayName="Days to Fit"/>
+                <column name="CumulReset" dataType="Integer" valdationType="List" formula1="1:True|0:False"/>
+                <column name="SkipDatesText" dataType="String" displayName="Days to Skip"/>
+              </columns>
+              <defaultRecords>
+                <record columns="DaysToFit|CumulReset|SkipDatesText" values="37:350|1|25,45:47"/>
+              </defaultRecords>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+        <datafeed name="CompleteData" displayName="Simulation Data" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="CompleteData" displayName="Simulation Data">
+              <columns>
+                <column name="CompleteDataID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="Iteration" dataType="Double" displayName=""/>
+                <column name="Timestep" dataType="Double" displayName=""/>
+                <column name="Susceptible" dataType="Double" displayName="number of people who could become infected"/>
+                <column name="Contagious" dataType="Double" displayName="number of people that can cause someone to become infected"/>
+                <column name="Total" dataType="Double" displayName="total population of the region"/>
+                <column name="Infected" dataType="Double" displayName="total number of people ever infected"/>
+                <column name="Recovered" dataType="Double" displayName="People who have recovered from the illness and are therefore no longer susceptible"/>
+                <column name="Deaths" dataType="Double" displayName="people who have died from the illness"/>
+                <column name="ContactTraced" dataType="Double" displayName="People identified through contact tracing"/>
+                <column name="Symptomatic" dataType="Double" displayName="People who have shown symptoms"/>
+                <column name="AsymptomaticRecovered" dataType="Double" displayName="People who have not shown symptoms"/>
+                <column name="Removed" dataType="Double" displayName="People removed from the contagious population"/>
+                <column name="Positives" dataType="Double" displayName="People who received a positive test report and removed from circulation"/>
+                <column name="Unreported" dataType="Double" displayName="Symptomatic people who do not receive a positive test result"/>
+                <column name="Reported" dataType="Double" displayName="Symptomatic people who received a positive test report"/>
+                <column name="ReportAnomalies" dataType="Double" displayName="Represents anomalous batches of reports"/>
+                <column name="NonIcuHospitalized" dataType="Double" displayName="Total non_icu hospitalization cases"/>
+                <column name="NonIcuRel" dataType="Double" displayName="Hospitalized not needing ICU and released"/>
+                <column name="IcuAdmissions" dataType="Double" displayName="People admitted to ICU"/>
+                <column name="Ventilated" dataType="Double" displayName="People who received ICU ventilator"/>
+                <column name="NonVentilatedRel" dataType="Double" displayName="ICU non-vent released"/>
+                <column name="VentilatedRel" dataType="Double" displayName="ICU ventilated released"/>
+                <column name="Hospitalized" dataType="Double" displayName="Total hospitalization cases"/>
+                <column name="InHospital" dataType="Double" displayName="People currently in hospital"/>
+                <column name="InIcu" dataType="Double" displayName="People currently in ICU"/>
+                <column name="OnVentilator" dataType="Double" displayName="People currently on ICU ventilator"/>
+                <column name="Outbreaks" dataType="Double" displayName="Infection outbreaks"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+      </datafeeds>
+      <pipeline>
+        <datafeed name="ParameterValues" type="Input"/>
+        <datafeed name="ModelFile" type="Input"/>
+        <datafeed name="epi_RunControl" type="Input"/>
+        <datafeed name="FittingParams" type="Input"/>
+        <datafeed name="epi_DataSummary" type="Output"/>
       </pipeline>
     </transformer>
   </transformers>
@@ -75,7 +165,9 @@
     <layout name="coreforms_ScenarioDatafeeds">
       <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/>
       <item name="ModelsAvailable" displayName="Models Available" appendTo="epi_Sources"/>
-      <!-- <item name="epi_RuntimeJurisdiction"/> -->
+      <item name="ModelFile" displayName="Downloaded Model" appendTo="epi_Sources"/>
+      <item name="FittingParams" displayName="Fitting Parameters" appendTo="epi_Sources"/>
+      <item name="CompleteData" displayName="Simulation Data" appendTo="epi_Sources"/>
     </layout>
   </layouts>
 </package>

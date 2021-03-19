@@ -20,7 +20,7 @@ def ssimEnvironment():
         'ProgramDirectory' : os.getenv('SSIM_PROGRAM_DIRECTORY'),
         'LibraryFilePath' : os.getenv('SSIM_LIBRARY_FILEPATH'),
         'ProjectId' : os.getenv('SSIM_PROJECT_ID'),
-        'ScenarioId' : os.getenv('SSIM_PROJECT_ID'),
+        'ScenarioId' : os.getenv('SSIM_SCENARIO_ID'),
         'InputDirectory' : os.getenv('SSIM_INPUT_DIRECTORY'),
         'OutputDirectory' : os.getenv('SSIM_OUTPUT_DIRECTORY'),
         'TempDirectory' : os.getenv('SSIM_TEMP_DIRECTORY'),
