@@ -51,11 +51,14 @@
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
-                <column name="Type" dataType="String" displayName="Variable Type"/>
+                <!-- validationType="List" formula1="\'int\':Int|\'float\':Float" -->
+                <column name="Type" dataType="String"  displayName="Variable Type"/>
                 <column name="Initial" dataType="Double" displayName="Initial Value"/>
                 <column name="Min" dataType="Double" displayName="Minimum Value"/>
                 <column name="Max" dataType="Double" displayName="Maximum Value"/>
-                <column name="Status" dataType="String" displayName="Fixed/Variable (for fitting)"/>
+                <!-- validationType="List" formula1="fixed|variable" -->
+                <column name="Status" dataType="String"  displayName="Fixed/Variable (for fitting)"/>
+                <!-- get a validation for this too -->
                 <column name="PriorDist" dataType="String" displayName="Prior Distribution"/>
                 <column name="PriorMean" dataType="Double" displayName="Prior Mean"/>
                 <column name="PriorSecond" dataType="Double" displayName="Prior SD/Half-width"/>
@@ -117,33 +120,40 @@
               <columns>
                 <column name="CompleteDataID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Iteration" dataType="Double" displayName=""/>
-                <column name="Timestep" dataType="Double" displayName=""/>
-                <column name="Susceptible" dataType="Double" displayName="number of people who could become infected"/>
-                <column name="Contagious" dataType="Double" displayName="number of people that can cause someone to become infected"/>
-                <column name="Total" dataType="Double" displayName="total population of the region"/>
-                <column name="Infected" dataType="Double" displayName="total number of people ever infected"/>
-                <column name="Recovered" dataType="Double" displayName="People who have recovered from the illness and are therefore no longer susceptible"/>
-                <column name="Deaths" dataType="Double" displayName="people who have died from the illness"/>
-                <column name="ContactTraced" dataType="Double" displayName="People identified through contact tracing"/>
-                <column name="Symptomatic" dataType="Double" displayName="People who have shown symptoms"/>
-                <column name="AsymptomaticRecovered" dataType="Double" displayName="People who have not shown symptoms"/>
-                <column name="Removed" dataType="Double" displayName="People removed from the contagious population"/>
-                <column name="Positives" dataType="Double" displayName="People who received a positive test report and removed from circulation"/>
-                <column name="Unreported" dataType="Double" displayName="Symptomatic people who do not receive a positive test result"/>
-                <column name="Reported" dataType="Double" displayName="Symptomatic people who received a positive test report"/>
-                <column name="ReportAnomalies" dataType="Double" displayName="Represents anomalous batches of reports"/>
-                <column name="NonIcuHospitalized" dataType="Double" displayName="Total non_icu hospitalization cases"/>
-                <column name="NonIcuRel" dataType="Double" displayName="Hospitalized not needing ICU and released"/>
-                <column name="IcuAdmissions" dataType="Double" displayName="People admitted to ICU"/>
-                <column name="Ventilated" dataType="Double" displayName="People who received ICU ventilator"/>
-                <column name="NonVentilatedRel" dataType="Double" displayName="ICU non-vent released"/>
-                <column name="VentilatedRel" dataType="Double" displayName="ICU ventilated released"/>
-                <column name="Hospitalized" dataType="Double" displayName="Total hospitalization cases"/>
-                <column name="InHospital" dataType="Double" displayName="People currently in hospital"/>
-                <column name="InIcu" dataType="Double" displayName="People currently in ICU"/>
-                <column name="OnVentilator" dataType="Double" displayName="People currently on ICU ventilator"/>
-                <column name="Outbreaks" dataType="Double" displayName="Infection outbreaks"/>
+                <column name="Iteration" dataType="Integer" displayName="Iteration"/>
+                <column name="Timestep" dataType="Date" displayName="Timestep"/>
+                <column name="DailyInfected" dataType="Integer" displayName="number of people infected daily"/>
+                <column name="Susceptible" dataType="Integer" displayName="number of people who could become infected"/>
+                <column name="Contagious" dataType="Integer" displayName="number of people that can cause someone to become infected"/>
+                <column name="Total" dataType="Integer" displayName="total population of the region"/>
+                <column name="Infected" dataType="Integer" displayName="total number of people ever infected"/>
+                <column name="VaccCand" dataType="Integer" displayName="vaccination candidates"/>
+                <column name="DailyVaccinated" dataType="Integer" displayName="number of people vaccinated each day"/>
+                <column name="Vaccinated" dataType="Integer" displayName="people vaccinated"/>
+                <column name="UsefullyVaccinated" dataType="Integer" displayName="people who were vaccinated when susceptible"/>
+                <column name="Immunized" dataType="Integer" displayName="number of susceptible people who were immunized by vaccine"/>
+                <column name="Recovered" dataType="Integer" displayName="People who have recovered from the illness and are therefore no longer susceptible"/>
+                <column name="Deaths" dataType="Integer" displayName="people who have died from the illness"/>
+                <column name="ContactTraced" dataType="Integer" displayName="People identified through contact tracing"/>
+                <column name="Symptomatic" dataType="Integer" displayName="People who have shown symptoms"/>
+                <column name="AsymptomaticRecovered" dataType="Integer" displayName="People who have not shown symptoms"/>
+                <column name="Removed" dataType="Integer" displayName="People removed from the contagious population"/>
+                <column name="Positives" dataType="Integer" displayName="People who received a positive test report"/>
+                <column name="Reported" dataType="Integer" displayName="Positives and reporting anomalies"/>
+                <!-- <column name="ReportAnomalies" dataType="Integer" displayName="Represents anomalous batches of reports"/> -->
+                <column name="NonIcuHospitalized" dataType="Integer" displayName="Total non_icu hospitalization cases"/>
+                <column name="NonIcuRel" dataType="Integer" displayName="Hospitalized not needing ICU and released"/>
+                <column name="IcuAdmissions" dataType="Integer" displayName="People admitted to ICU"/>
+                <column name="Ventilated" dataType="Integer" displayName="People who received ICU ventilator"/>
+                <column name="NonVentilatedRel" dataType="Integer" displayName="ICU non-vent released"/>
+                <column name="VentilatedRel" dataType="Integer" displayName="ICU ventilated released"/>
+                <column name="Hospitalized" dataType="Integer" displayName="Total hospitalization cases"/>
+                <column name="InHospital" dataType="Integer" displayName="People currently in hospital"/>
+                <column name="InIcu" dataType="Integer" displayName="People currently in ICU"/>
+                <column name="OnVentilator" dataType="Integer" displayName="People currently on ICU ventilator"/>
+                <column name="SusVaccCand" dataType="Integer" displayName="vaccination candidates who are susceptible"/>
+                <!-- <column name="Frac" dataType="Integer" displayName=""/> -->
+                <!-- <column name="Outbreaks" dataType="Integer" displayName="Infection outbreaks"/> -->
               </columns>
             </datasheet>
           </datasheets>
@@ -155,6 +165,7 @@
         <datafeed name="epi_RunControl" type="Input"/>
         <datafeed name="FittingParams" type="Input"/>
         <datafeed name="epi_DataSummary" type="Output"/>
+        <datafeed name="CompleteData" type=" Output"/>
       </pipeline>
     </transformer>
   </transformers>

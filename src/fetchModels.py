@@ -11,22 +11,36 @@ import pandas
 
 from syncro import *
 
-def unaccumulate(a):
-    return [a[0]] + [t - s for s, t in zip(a, a[1:])]
+def capitaliseFirst(string):
+    return string[0].upper() + string[1:]
+
+def delta(cumul):
+    diff = []
+    for i in range(1, len(cumul)):
+        diff.append(cumul[i] - cumul[i - 1])
+    # first daily value is repeated since val(t0-1) is unknown
+    diff.insert(0,diff[0])
+    return diff
 
 def camelify(x):
-	return ''.join(i.capitalize() for i in x.replace('_', ' ').replace(',', ' ').split(' '))
+	return ''.join(capitaliseFirst(i) for i in x.replace('_', ' ').replace(',', ' ').split(' '))
 
 def openModel(my_pickle):
-    model = pickle.loads(my_pickle)
+    try:
+        model = pickle.loads(my_pickle)
+    except UnpicklingError as error:
+        print('*** Model NOT loaded ***')
+        print(error)
+
     time_step = model.get_time_step()
+
     if time_step > 1.001 or time_step < 0.999:
-        print('Filename: ' + filename)
         print('*** Model NOT loaded ***')
         print('Currently, ipypm only supports models with time_step = 1 day.')
     return model
 
 def downloadModel(theURL):
+
     try:
         modelResponse = requests.get(theURL);
     except requests.exceptions.RequestException as error:
@@ -46,25 +60,25 @@ def ageRange(modelName:str):
     firstBit = modelName.split('_')[0]
 
     if any([substring in firstBit for substring in ['under', 'less']]):
-        return 'under {}'.format(getSubinteger(firstBit))
+        return ', under {}'.format(getSubinteger(firstBit))
 
     elif any([substring in firstBit for substring in ['over', 'plus']]):
         # extra space to make sure that all strings are the same length
-        return ' over {}'.format(getSubinteger(firstBit))
+        return ', over {}'.format(getSubinteger(firstBit))
 
     elif 'to' in firstBit:
         subStrs = firstBit.split('to')
         fromAge = getSubinteger(subStrs[0])
         toAge = getSubinteger(subStrs[1])
-        return '{} -> {}'.format(fromAge, toAge)
+        return ', {} -> {}'.format(fromAge, toAge)
 
     # 'bc60_2_3_0911', etc
     elif bool(re.search(r'\d', firstBit)):
         fromAge = getSubinteger(firstBit)
         toAge = fromAge + 9
-        return '{} -> {}'.format(fromAge, toAge)
+        return ', {} -> {}'.format(fromAge, toAge)
 
-    return 8*' '
+    return ''
 
 def regionInfo(countryName:str, modelName:str):
 
@@ -120,7 +134,7 @@ def regionInfo(countryName:str, modelName:str):
             # regionInfo('BC', 'interior_2_8_0309.pypm')
             finalName = lut[ theSplit[0] ].title()
 
-    return '({:5}) {:26}'.format(iso3166Code, finalName)
+    return '({}) {}'.format(iso3166Code, finalName)
 
 
 env = ssimEnvironment()
@@ -133,6 +147,7 @@ countryFolders = foldersResponse.json()
 countryList = list(countryFolders.keys())
 
 modelsAvailable = []
+theVariables = {}
 
 for country in countryList:
 
@@ -151,11 +166,34 @@ for country in countryList:
 
         modelURL = 'http://data.ipypm.ca/get_pypm/{}'.format(modelFn)
 
+        theModel = downloadModel(modelURL)
+
+        '''
+            run the model for a few time steps to make sure it's good
+            check the output to kmake sure that the infection is moving
+            if it gives Attribute Error as is, dump it
+            if the infection isn't moving, dump it
+        '''
+        theModel.reset()
+
+        try:
+            theModel.generate_data(10)
+        except AttributeError:
+            continue
+
+        somePredictions = theModel.populations['infected'].history
+        if len(somePredictions) != len(set(somePredictions)):
+            continue
+
+        populationDescrips = {camelify(x.name) : x.description for x in theModel.populations.values()}
+        theVariables = {**theVariables, **populationDescrips}
+
         modelsAvailable.append({
             'Region': '{} {}'.format(regionInfo(countryName, filename), ageRange(filename)),
             'Name': filename,
             'URL' : modelURL
         })
+
 
 modelsAvail = pandas.DataFrame(modelsAvailable)
 
@@ -167,7 +205,7 @@ for index in repeatedIndices:
     date = modelName.split('_')[-1].replace('.pypm', '')
     newDate = '({}/{})'.format(date[:2], date[2:])
     regionName = modelsAvail.Region[index]
-    modelsAvail.iloc[index]['Region'] = regionName[:-7] + newDate
+    modelsAvail.iloc[index]['Region'] = regionName + newDate
 
 theJurisdictions = datasheet(myScenario, 'epi_Jurisdiction', empty=True)
 theJurisdictions = theJurisdictions.drop(columns=['JurisdictionID'])
@@ -185,3 +223,16 @@ theModels.Name = modelsAvail.Name
 theModels.URL = modelsAvail.URL
 
 saveDatasheet(myScenario, theModels, "modelKarlenPypm_ModelsAvailable")
+
+'''
+    appending to the variable name table
+    Names must be unique, with no NAs
+    so get what's in there first, and then concatenate, drop NAs and duplicates
+    delete the populations with empty descriptions
+'''
+beforeVars = datasheet(myScenario, "epi_Variable").drop(columns=['VariableID'])
+currentVars = pandas.DataFrame({'Name':theVariables.keys(), 'Description':theVariables.values()})
+currentVars = currentVars[currentVars.Description != '']
+currentVars = currentVars.append({'Name':'DailyInfected', 'Description':'number of new infections per day'}, ignore_index=True)
+newVars = pandas.concat([beforeVars, currentVars]).dropna().drop_duplicates()
+saveDatasheet(myScenario, newVars, "epi_Variable")

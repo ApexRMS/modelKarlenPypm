@@ -4,11 +4,12 @@ for i in list(globals().keys()):
     if(i[0] != '_'):
         exec('del {}'.format(i))
 
+import re
 import pandas
 import numpy
 import datetime
 
-from fetchModels import downloadModel, camelify, unaccumulate
+from fetchModels import downloadModel, camelify, delta
 from syncro import *
 
 from pypmca.analysis.Optimizer import Optimizer
@@ -18,6 +19,7 @@ myScenario = scenario()
 
 runControl = datasheet(myScenario, "epi_RunControl")
 fileInfo = datasheet(myScenario, "modelKarlenPypm_ModelFile")
+legalColumns = list(set(datasheet(myScenario, "epi_Variable").Name))
 
 numIterations = runControl.MaximumIteration[0]
 endDate = runControl.MaximumTimestep[0]
@@ -115,46 +117,39 @@ startDate = datetime.datetime.strptime(startDate0, "%Y-%m-%d")
 for iter in range(numIterations):
 
     tempTable = pandas.DataFrame()
-    tempTableSummary = pandas.DataFrame()
 
     theModel.reset()
     theModel.generate_data(simLength)
 
     for pop in theModel.populations.keys():
-        if pop != 'frac':
-            tempTable[pop] = theModel.populations[pop].history
+        if camelify(pop) in legalColumns:
+            tempTable[camelify(pop)] = theModel.populations[pop].history
 
-    tempTable['Iteration'] = str(iter)
+    tempTable['Iteration'] = str(iter+1)
     tempTable['Timestep'] = [(startDate+datetime.timedelta(days=x)).strftime('%Y-%m-%d') for x in range(tempTable.shape[0])]
-
-    tempTableSummary['Iteration'] = tempTable.Iteration
-    tempTableSummary['Timestep'] = tempTable.Timestep
-    tempTableSummary['Jurisdiction'] = fileInfo.Region[0]
-    # tempTableSummary['Variable'] = 'Cases - Daily'
-    tempTableSummary['Value'] = unaccumulate(tempTable.infected)
-
+    # this name will camelify into "DailyInfected" as in the XML
+    tempTable['DailyInfected'] = delta(tempTable.Infected)
     simDict[str(iter)] = tempTable
-    simSummaryDict[str(iter)] = tempTableSummary
+
+    meltedTable = pandas.melt(tempTable, id_vars=["Timestep", "Iteration"])
+    simSummaryDict[str(iter)] = meltedTable
+
 
 allData = pandas.concat(simDict.values(), ignore_index=False)
-summaryData = pandas.concat(simSummaryDict.values(), ignore_index=False)
+summaryData = pandas.concat(simSummaryDict.values(), ignore_index=True)
 
 epiDatasummary = datasheet(myScenario, "epi_DataSummary", empty=True)
 epiDatasummary.Iteration = summaryData.Iteration
 epiDatasummary.Timestep = summaryData.Timestep
-epiDatasummary.Variable = 'Cases - Daily'
-epiDatasummary.Jurisdiction = fileInfo.Region[0]
-epiDatasummary.Value = summaryData.Value
-epiDatasummary = epiDatasummary.drop(columns=['AgeMin', 'AgeMax', 'Sex', 'DataSummaryID'])
+epiDatasummary.Variable = summaryData.variable
+epiDatasummary.Value = summaryData.value
+epiDatasummary.Jurisdiction = fileInfo.Region[0] # re.sub(' +', ' ', )
 saveDatasheet(myScenario, epiDatasummary, "epi_DataSummary")
 
 completeData = datasheet(myScenario, "modelKarlenPypm_CompleteData", empty=True)
-
 allData.columns = [camelify(x) for x in allData.columns]
-
-for varName in allData.columns.intersection(completeData.columns):
+for varName in list(allData.columns.intersection(completeData.columns))+['DailyInfected']:
     completeData[varName] = allData[varName]
-
 saveDatasheet(myScenario, completeData, "modelKarlenPypm_CompleteData")
 
 # '''

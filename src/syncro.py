@@ -114,7 +114,7 @@ def datasheet(theScenario:scenario, datasheetName:str=None, empty:bool=False):
         else:
             return theTable
 
-def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, datasheetName:str):
+def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, datasheetName:str, append:bool=False):
 
     getDatasheetsLine = '"{}" --list --datasheets --lib={}'.format(theScenario.console, theScenario.filepath)
     currentDatasheets = parseOutputAsTable(getDatasheetsLine)
@@ -129,15 +129,28 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
     tempDir = tempfile.mkdtemp()
     exportFilename = '{}\\export.csv'.format(tempDir)
     dataSheet.to_csv(exportFilename, index=False)
-    cmdLine = '"{}" --import --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
-        theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
-    )
-    subprocess.call(cmdLine)
-    shutil.rmtree(tempDir)
 
-    env = ssimEnvironment()
-    exportFilename2 = '{}\\SSIM_OVERWRITE-{}.csv'.format(env.TransferDirectory, datasheetName)
-    dataSheet.to_csv(exportFilename2, index=False)
+    if append == False:
+        cmdLine = '"{}" --import --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
+            theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
+        )
+        subprocess.call(cmdLine)
+        shutil.rmtree(tempDir)
+
+        env = ssimEnvironment()
+        exportFilename2 = '{}\\SSIM_OVERWRITE-{}.csv'.format(env.TransferDirectory, datasheetName)
+        dataSheet.to_csv(exportFilename2, index=False)
+
+    else:
+        cmdLine = '"{}" --import --append --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
+            theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
+        )
+        subprocess.call(cmdLine)
+        shutil.rmtree(tempDir)
+
+        env = ssimEnvironment()
+        exportFilename2 = '{}\\SSIM_APPEND-{}.csv'.format(env.TransferDirectory, datasheetName)
+        dataSheet.to_csv(exportFilename2, index=False)
 
     return None
 
