@@ -1,36 +1,42 @@
 #!/usr/bin/python
 
-for i in list(globals().keys()):
-    if(i[0] != '_'):
-        exec('del {}'.format(i))
+# for i in list(globals().keys()):
+#     if(i[0] != '_'):
+#         exec('del {}'.format(i))
 
 import pandas
 import numpy
 import datetime
 
 from syncro import *
-from fetchModels import downloadModel
+from headerFile import * # downloadModel, tablePriorDist, tableStatus, tableType
 
 env = ssimEnvironment()
 myScenario = scenario()
 
 allURLs = datasheet(myScenario, "epi_Jurisdiction")
-chosenModel = datasheet(myScenario, "epi_RuntimeJurisdiction").Jurisdiction[0]
+runJuris = datasheet(myScenario, "epi_RuntimeJurisdiction")
+
+chosenModel = list(set([x  for x in allURLs.Name if 'British Columbia' in x]))[2]
+
+if runJuris.shape[0] != 0:
+    chosenModel = str(runJuris.Jurisdiction[0])
 
 theURL = pandas.unique(allURLs[allURLs.Name == chosenModel].Description)[0]
 
 model = downloadModel(theURL)
 
 fileName = '{}\\{}.pypm'.format(env.TransferDirectory, model.name)
-
 model.save_file(fileName)
 
-PARAMETER_ATTIBUTES = ['name', 'description', 'parameter_type', 'initial_value', 'parameter_min', 'parameter_max', 'mcmc_step', 'prior_function']
+PARAMETER_ATTIBUTES = ['name', 'description', 'initial_value', 'parameter_min', 'parameter_max', 'mcmc_step']
 Parameters = dict()
 
 for key in PARAMETER_ATTIBUTES:
     Parameters[key] = []
 
+Parameters['parameter_type'] = []
+Parameters['prior_function'] = []
 Parameters['prior_mean'] = []
 Parameters['prior_second'] = []
 Parameters['status'] = []
@@ -41,6 +47,10 @@ for param_name in model.parameters:
 
     for attr_name in PARAMETER_ATTIBUTES:
         Parameters[attr_name].append( getattr(param, attr_name) )
+
+    Parameters['parameter_type'].append( tableType(param.parameter_type) )
+    Parameters['prior_function'].append( tablePriorDist(param.prior_function) )
+
     if param.prior_function == None:
         Parameters['prior_mean'].append('')
         Parameters['prior_second'].append('')
@@ -48,7 +58,7 @@ for param_name in model.parameters:
         Parameters['prior_mean'].append(param.prior_parameters['mean'])
         Parameters['prior_second'].append(list(param.prior_parameters.values())[1])
 
-    Parameters['status'].append(param.get_status())
+    Parameters['status'].append( tableStatus(param.get_status()) )
 
 ParameterFrame = pandas.DataFrame()
 

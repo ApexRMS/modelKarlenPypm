@@ -22,16 +22,22 @@
                 <!-- <column name="Description" dataType="String" displayName="Description"/> -->
                 <column name="URL" dataType="String" displayName="Model Download URL"/>
               </columns>
+              <validations>
+                <validation validationType="Unique" columns="Region|Name|URL"/>
+              </validations>
             </datasheet>
           </datasheets>
         </datafeed>
       </datafeeds>
       <pipeline>
         <datafeed name="ModelsAvailable" type="Output"/>
+        <datafeed name="epi_Jurisdiction" type="Both"/>
+        <datafeed name="epi_Variable" type="Both"/>
       </pipeline>
       <include>
         <transformer name="modelKarlenPypm_fetchParameters"/>
         <transformer name="modelKarlenPypm_runIterations"/>
+        <transformer name="modelKarlenPypm_randomRuns"/>
       </include>
     </transformer>
     <transformer
@@ -51,19 +57,19 @@
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
-                <!-- validationType="List" formula1="\'int\':Int|\'float\':Float" -->
-                <column name="Type" dataType="String"  displayName="Variable Type"/>
+                <column name="Type" dataType="Integer" validationType="List" formula1="1:int|2:float" displayName="Variable Type"/>
                 <column name="Initial" dataType="Double" displayName="Initial Value"/>
                 <column name="Min" dataType="Double" displayName="Minimum Value"/>
                 <column name="Max" dataType="Double" displayName="Maximum Value"/>
-                <!-- validationType="List" formula1="fixed|variable" -->
-                <column name="Status" dataType="String"  displayName="Fixed/Variable (for fitting)"/>
-                <!-- get a validation for this too -->
-                <column name="PriorDist" dataType="String" displayName="Prior Distribution"/>
+                <column name="Status" dataType="Integer" validationType="List" formula1="1:fixed|2:variable" displayName="Fixed/Variable"/>
+                <column name="PriorDist" dataType="Integer" displayName="Prior Distribution" validationType="List" formula1="1:uniform|2:norm|3:"/>
                 <column name="PriorMean" dataType="Double" displayName="Prior Mean"/>
-                <column name="PriorSecond" dataType="Double" displayName="Prior SD/Half-width"/>
-                <column name="MCMCStep" dataType="Double" displayName="MCMC step size"/>
+                <column name="PriorSecond" dataType="Double" validationType="Decimal" validationCondition="GreaterEqual" formula1="0.0" displayName="Prior SD/Half-width"/>
+                <column name="MCMCStep" dataType="Double" validationType="Decimal" validationCondition="GreaterEqual" formula1="0.0" displayName="MCMC step size"/>
               </columns>
+              <validations>
+                <validation validationType="Unique" columns="Name|Description"/>
+              </validations>
             </datasheet>
           </datasheets>
         </datafeed>
@@ -79,6 +85,9 @@
                 <column name="PypmFile" displayName="Object File" dataType="String" isExternalFile="True"/>
                 <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
               </columns>
+              <validations>
+                <validation validationType="Unique" columns="Region|Name|URL|PypmFile"/>
+              </validations>
             </datasheet>
           </datasheets>
         </datafeed>
@@ -104,12 +113,13 @@
               <columns>
                 <column name="FittingParamsID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="DaysToFit" dataType="String" displayName="Days to Fit"/>
+                <column name="StartFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Day To Start Fitting"/>
+                <column name="EndFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Dat To End Fitting"/>
                 <column name="CumulReset" dataType="Integer" valdationType="List" formula1="1:True|0:False"/>
                 <column name="SkipDatesText" dataType="String" displayName="Days to Skip"/>
               </columns>
               <defaultRecords>
-                <record columns="DaysToFit|CumulReset|SkipDatesText" values="37:350|1|25,45:47"/>
+                <record columns="StartFit|EndFit|CumulReset|SkipDatesText" values="37|350|1|25,45:47"/>
               </defaultRecords>
             </datasheet>
           </datasheets>
@@ -140,13 +150,13 @@
                 <column name="Removed" dataType="Integer" displayName="People removed from the contagious population"/>
                 <column name="Positives" dataType="Integer" displayName="People who received a positive test report"/>
                 <column name="Reported" dataType="Integer" displayName="Positives and reporting anomalies"/>
-                <!-- <column name="ReportAnomalies" dataType="Integer" displayName="Represents anomalous batches of reports"/> -->
+                <column name="ReportAnomalies" dataType="Integer" displayName="Represents anomalous batches of reports"/>
                 <column name="NonIcuHospitalized" dataType="Integer" displayName="Total non_icu hospitalization cases"/>
                 <column name="NonIcuRel" dataType="Integer" displayName="Hospitalized not needing ICU and released"/>
                 <column name="IcuAdmissions" dataType="Integer" displayName="People admitted to ICU"/>
-                <column name="Ventilated" dataType="Integer" displayName="People who received ICU ventilator"/>
-                <column name="NonVentilatedRel" dataType="Integer" displayName="ICU non-vent released"/>
-                <column name="VentilatedRel" dataType="Integer" displayName="ICU ventilated released"/>
+                <!-- <column name="Ventilated" dataType="Integer" displayName="People who received ICU ventilator"/> -->
+                <!-- <column name="NonVentilatedRel" dataType="Integer" displayName="ICU non-vent released"/> -->
+                <!-- <column name="VentilatedRel" dataType="Integer" displayName="ICU ventilated released"/> -->
                 <column name="Hospitalized" dataType="Integer" displayName="Total hospitalization cases"/>
                 <column name="InHospital" dataType="Integer" displayName="People currently in hospital"/>
                 <column name="InIcu" dataType="Integer" displayName="People currently in ICU"/>
@@ -164,8 +174,20 @@
         <datafeed name="ModelFile" type="Input"/>
         <datafeed name="epi_RunControl" type="Input"/>
         <datafeed name="FittingParams" type="Input"/>
-        <datafeed name="epi_DataSummary" type="Output"/>
         <datafeed name="CompleteData" type=" Output"/>
+      </pipeline>
+    </transformer>
+    <transformer
+      name="modelKarlenPypm_randomRuns"
+      displayName="modelKarlenPypm_randomRuns"
+      programName="spyder"
+      programArguments="fullRandomRun.py"
+      extendsTransformer="epi_Primary"
+      runContext="LocalOnly"
+      isRunnable ="True">
+      <pipeline>
+        <datafeed name="epi_Jurisdiction" type="Input"/>
+        <datafeed name="epi_Variable" type=" Output"/>
       </pipeline>
     </transformer>
   </transformers>
@@ -174,11 +196,22 @@
       <item name="core_RConfig"/>
     </layout>
     <layout name="coreforms_ScenarioDatafeeds">
-      <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/>
-      <item name="ModelsAvailable" displayName="Models Available" appendTo="epi_Sources"/>
-      <item name="ModelFile" displayName="Downloaded Model" appendTo="epi_Sources"/>
-      <item name="FittingParams" displayName="Fitting Parameters" appendTo="epi_Sources"/>
-      <item name="CompleteData" displayName="Simulation Data" appendTo="epi_Sources"/>
+      <group name="KarlenModel" displayName="pypmca" appendTo="epi_Models">
+        <group name="Inputs" displayName="Inputs" appendTo="KarlenModel">
+          <item name="FittingParams"/>
+          <item name="ParameterValues"/>
+          <item name="ModelFile"/>
+        </group>
+        <group name="Outputs" displayName="Outputs" appendTo="KarlenModel">
+          <item name="CompleteData"/>
+          <item name="ModelsAvailable"/>
+        </group>
+      </group>
+      <!-- <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/> -->
+      <!-- <item name="ModelsAvailable" displayName="Models Available" appendTo="epi_Sources"/> -->
+      <!-- <item name="ModelFile" displayName="Downloaded Model" appendTo="epi_Sources"/> -->
+      <!-- <item name="FittingParams" displayName="Fitting Parameters" appendTo="epi_Sources"/> -->
+      <!-- <item name="CompleteData" displayName="Simulation Data" appendTo="epi_Sources"/> -->
     </layout>
   </layouts>
 </package>

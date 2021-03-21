@@ -1,10 +1,13 @@
-#!/usr/bin/python
+# #!/usr/bin/python
 
 for i in list(globals().keys()):
     if(i[0] != '_'):
         exec('del {}'.format(i))
-        
+
+import pandas
 import requests
+import random
+import collections
 
 from syncro import *
 from headerFile import *
@@ -19,7 +22,6 @@ countryFolders = foldersResponse.json()
 countryList = list(countryFolders.keys())
 
 modelsAvailable = []
-theVariables = {}
 
 for country in countryList:
 
@@ -57,9 +59,6 @@ for country in countryList:
         if len(somePredictions) != len(set(somePredictions)):
             continue
 
-        populationDescrips = {camelify(x.name) : x.description for x in theModel.populations.values()}
-        theVariables = {**theVariables, **populationDescrips}
-
         modelsAvailable.append({
             'Region': '{} {}'.format(regionInfo(countryName, filename), ageRange(filename)),
             'Name': filename,
@@ -96,15 +95,53 @@ theModels.URL = modelsAvail.URL
 
 saveDatasheet(myScenario, theModels, "modelKarlenPypm_ModelsAvailable")
 
-'''
-    appending to the variable name table
-    Names must be unique, with no NAs
-    so get what's in there first, and then concatenate, drop NAs and duplicates
-    delete the populations with empty descriptions
-'''
-beforeVars = datasheet(myScenario, "epi_Variable").drop(columns=['VariableID'])
-currentVars = pandas.DataFrame({'Name':theVariables.keys(), 'Description':theVariables.values()})
-currentVars = currentVars[currentVars.Description != '']
-currentVars = currentVars.append({'Name':'DailyInfected', 'Description':'number of new infections per day'}, ignore_index=True)
-newVars = pandas.concat([beforeVars, currentVars]).dropna().drop_duplicates()
-saveDatasheet(myScenario, newVars, "epi_Variable")
+##################################################################################################
+
+theJurisdictions = datasheet(myScenario, 'epi_Jurisdiction')
+
+emptyCols = []
+
+simLength = 450
+
+numIterations = 50
+
+for iteration in range(numIterations):
+    
+    modelsToTrial = random.sample(range(theJurisdictions.shape[0]), 94)
+
+    for modelNumber in modelsToTrial:
+    
+        randNumber = random.sample(range(theJurisdictions.shape[0]), 1)[0]
+        modelURL = theJurisdictions.Description[randNumber]
+        
+        theModel = downloadModel(modelURL)
+
+        theModel.reset()
+        theModel.evolve_expectations(simLength)
+        
+        for population in theModel.populations.values():
+            
+            theVector = population.history
+            if len(set(theVector)) < simLength/10:
+                emptyCols.append(population.name)
+    
+repetitions = collections.Counter(emptyCols)
+repetitions = {x:y/numIterations/len(modelsToTrial) for (x,y) in repetitions.items()}
+commentThese = {x:round(y,2) for (x,y) in dict(repetitions).items() if y>0.7}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
