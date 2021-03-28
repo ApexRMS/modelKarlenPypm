@@ -5,45 +5,59 @@
       name="modelKarlenPypm_fetchModels"
       isPrimary="True"
       displayName="modelKarlenPypm_fetchModels"
-      programName="spyder"
+      programName="python"
       programArguments="fetchModels.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
       isRunnable ="True">
       <datafeeds>
+        <datafeed name="ConventionFileOut" displayName="Population Names" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ConventionFileOut" displayName="Population Names File" isSingeRow="True">
+              <columns>
+                <column name="ConventionFileOutID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="File" displayName="File" dataType="String" isExternalFile="True"/>
+                <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
         <datafeed name="ModelsAvailable" displayName="Models Available" dataScope="Scenario">
           <datasheets>
             <datasheet name="ModelsAvailable" displayname="Models Available">
               <columns>
                 <column name="ModelsAvailableID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Region" dataType="String" displayName="Region Name"/>
+                <column name="Code" dataType="String" displayName="ISO Code"/>
+                <column name="Country" dataType="String" displayName="Country"/>
+                <column name="Region" dataType="String" displayName="Region"/>
+                <column name="AgeRange" dataType="String" displayName="Age Range"/>
+                <column name="Date" dataType="String" displayName="Date"/>
                 <column name="Name" dataType="String" displayName="Model Name"/>
-                <!-- <column name="Description" dataType="String" displayName="Description"/> -->
-                <column name="URL" dataType="String" displayName="Model Download URL"/>
+                <column name="URL" dataType="String" displayName="Download URL"/>
               </columns>
               <validations>
-                <validation validationType="Unique" columns="Region|Name|URL"/>
+                <validation validationType="Unique" columns="Code|Country|Region|Name|URL"/>
               </validations>
             </datasheet>
           </datasheets>
         </datafeed>
       </datafeeds>
       <pipeline>
+        <datafeed name="ConventionFileOut" type="Output"/>
         <datafeed name="ModelsAvailable" type="Output"/>
-        <datafeed name="epi_Jurisdiction" type="Both"/>
-        <datafeed name="epi_Variable" type="Both"/>
       </pipeline>
       <include>
         <transformer name="modelKarlenPypm_fetchParameters"/>
         <transformer name="modelKarlenPypm_runIterations"/>
-        <transformer name="modelKarlenPypm_randomRuns"/>
+        <!-- <transformer name="modelKarlenPypm_randomRuns"/> -->
       </include>
     </transformer>
     <transformer
       name="modelKarlenPypm_fetchParameters"
       displayName="modelKarlenPypm_fetchParameters"
-      programName="spyder"
+      programName="python"
       programArguments="defaultParameters.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
@@ -57,7 +71,6 @@
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
-                <column name="Type" dataType="Integer" validationType="List" formula1="1:int|2:float" displayName="Variable Type"/>
                 <column name="Initial" dataType="Double" displayName="Initial Value"/>
                 <column name="Min" dataType="Double" displayName="Minimum Value"/>
                 <column name="Max" dataType="Double" displayName="Maximum Value"/>
@@ -91,17 +104,47 @@
             </datasheet>
           </datasheets>
         </datafeed>
+        <datafeed name="ConventionFileIn" displayName="Population Names" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ConventionFileIn" displayName="Population Names File" isSingleRow="True">
+              <columns>
+                <column name="ConventionFileInID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="FileName" dataType="String" displayName="File Name" isExternalFile="True"/>
+              </columns>
+              <defaultRecords>
+                <record columns="FileName" values="C:\Users\User\Documents\SyncroSim\Libraries\epi.ssim.temp\StockToStandard.csv"/>
+              </defaultRecords>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+        <datafeed name="PopulationSelectionTable" displayName="Population Selection" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="PopulationSelectionTable" displayName="Population Selection">
+              <columns>
+                <column name="PopulationSelectionTableID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="Show" dataType="Boolean" displayName="Show (Yes/No)"/>
+                <column name="StandardName" dataType="String" displayName="Population Name"/>
+                <column name="Description" dataType="String" displayName="Description"/>
+                <column name="StockName" dataType="String" displayName="Default Name"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
       </datafeeds>
       <pipeline>
         <datafeed name="ParameterValues" type="Output"/>
         <datafeed name="ModelFile" type="Output"/>
+        <datafeed name="ConventionFileIn" type="Input"/>
+        <datafeed name="PopulationSelectionTable" type="Output"/>
         <datafeed name="epi_RunControl" type="Input"/>
       </pipeline>
     </transformer>
     <transformer
       name="modelKarlenPypm_runIterations"
       displayName="modelKarlenPypm_runIterations"
-      programName="spyder"
+      programName="python"
       programArguments="runIterations.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
@@ -119,52 +162,8 @@
                 <column name="SkipDatesText" dataType="String" displayName="Days to Skip"/>
               </columns>
               <defaultRecords>
-                <record columns="StartFit|EndFit|CumulReset|SkipDatesText" values="37|350|1|25,45:47"/>
+                <record columns="StartFit|EndFit|CumulReset|SkipDatesText" values="37|350|1|147,45:47"/>
               </defaultRecords>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="CompleteData" displayName="Simulation Data" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="CompleteData" displayName="Simulation Data">
-              <columns>
-                <column name="CompleteDataID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Iteration" dataType="Integer" displayName="Iteration"/>
-                <column name="Timestep" dataType="Date" displayName="Timestep"/>
-                <column name="DailyInfected" dataType="Integer" displayName="number of people infected daily"/>
-                <column name="Susceptible" dataType="Integer" displayName="number of people who could become infected"/>
-                <column name="Contagious" dataType="Integer" displayName="number of people that can cause someone to become infected"/>
-                <column name="Total" dataType="Integer" displayName="total population of the region"/>
-                <column name="Infected" dataType="Integer" displayName="total number of people ever infected"/>
-                <column name="VaccCand" dataType="Integer" displayName="vaccination candidates"/>
-                <column name="DailyVaccinated" dataType="Integer" displayName="number of people vaccinated each day"/>
-                <column name="Vaccinated" dataType="Integer" displayName="people vaccinated"/>
-                <column name="UsefullyVaccinated" dataType="Integer" displayName="people who were vaccinated when susceptible"/>
-                <column name="Immunized" dataType="Integer" displayName="number of susceptible people who were immunized by vaccine"/>
-                <column name="Recovered" dataType="Integer" displayName="People who have recovered from the illness and are therefore no longer susceptible"/>
-                <column name="Deaths" dataType="Integer" displayName="people who have died from the illness"/>
-                <column name="ContactTraced" dataType="Integer" displayName="People identified through contact tracing"/>
-                <column name="Symptomatic" dataType="Integer" displayName="People who have shown symptoms"/>
-                <column name="AsymptomaticRecovered" dataType="Integer" displayName="People who have not shown symptoms"/>
-                <column name="Removed" dataType="Integer" displayName="People removed from the contagious population"/>
-                <column name="Positives" dataType="Integer" displayName="People who received a positive test report"/>
-                <column name="Reported" dataType="Integer" displayName="Positives and reporting anomalies"/>
-                <column name="ReportAnomalies" dataType="Integer" displayName="Represents anomalous batches of reports"/>
-                <column name="NonIcuHospitalized" dataType="Integer" displayName="Total non_icu hospitalization cases"/>
-                <column name="NonIcuRel" dataType="Integer" displayName="Hospitalized not needing ICU and released"/>
-                <column name="IcuAdmissions" dataType="Integer" displayName="People admitted to ICU"/>
-                <!-- <column name="Ventilated" dataType="Integer" displayName="People who received ICU ventilator"/> -->
-                <!-- <column name="NonVentilatedRel" dataType="Integer" displayName="ICU non-vent released"/> -->
-                <!-- <column name="VentilatedRel" dataType="Integer" displayName="ICU ventilated released"/> -->
-                <column name="Hospitalized" dataType="Integer" displayName="Total hospitalization cases"/>
-                <column name="InHospital" dataType="Integer" displayName="People currently in hospital"/>
-                <column name="InIcu" dataType="Integer" displayName="People currently in ICU"/>
-                <column name="OnVentilator" dataType="Integer" displayName="People currently on ICU ventilator"/>
-                <column name="SusVaccCand" dataType="Integer" displayName="vaccination candidates who are susceptible"/>
-                <!-- <column name="Frac" dataType="Integer" displayName=""/> -->
-                <!-- <column name="Outbreaks" dataType="Integer" displayName="Infection outbreaks"/> -->
-              </columns>
             </datasheet>
           </datasheets>
         </datafeed>
@@ -172,22 +171,10 @@
       <pipeline>
         <datafeed name="ParameterValues" type="Input"/>
         <datafeed name="ModelFile" type="Input"/>
+        <datafeed name="PopulationSelectionTable" type="Input"/>
         <datafeed name="epi_RunControl" type="Input"/>
         <datafeed name="FittingParams" type="Input"/>
-        <datafeed name="CompleteData" type=" Output"/>
-      </pipeline>
-    </transformer>
-    <transformer
-      name="modelKarlenPypm_randomRuns"
-      displayName="modelKarlenPypm_randomRuns"
-      programName="spyder"
-      programArguments="fullRandomRun.py"
-      extendsTransformer="epi_Primary"
-      runContext="LocalOnly"
-      isRunnable ="True">
-      <pipeline>
-        <datafeed name="epi_Jurisdiction" type="Input"/>
-        <datafeed name="epi_Variable" type=" Output"/>
+				<datafeed name="epi_DataSummary" type="Output"/>
       </pipeline>
     </transformer>
   </transformers>
@@ -201,17 +188,14 @@
           <item name="FittingParams"/>
           <item name="ParameterValues"/>
           <item name="ModelFile"/>
+          <item name="PopulationSelectionTable"/>
+          <item name="ConventionFileIn"/>
         </group>
         <group name="Outputs" displayName="Outputs" appendTo="KarlenModel">
-          <item name="CompleteData"/>
           <item name="ModelsAvailable"/>
+          <item name="ConventionFileOut"/>
         </group>
       </group>
-      <!-- <item name="ParameterValues" displayName="Parameter Values" appendTo="epi_Sources"/> -->
-      <!-- <item name="ModelsAvailable" displayName="Models Available" appendTo="epi_Sources"/> -->
-      <!-- <item name="ModelFile" displayName="Downloaded Model" appendTo="epi_Sources"/> -->
-      <!-- <item name="FittingParams" displayName="Fitting Parameters" appendTo="epi_Sources"/> -->
-      <!-- <item name="CompleteData" displayName="Simulation Data" appendTo="epi_Sources"/> -->
     </layout>
   </layouts>
 </package>
