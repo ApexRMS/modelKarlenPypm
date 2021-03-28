@@ -2,10 +2,57 @@ import requests
 import pickle
 import pycountry
 import pandas
+import datetime
+import pypmca
 
 from syncro import *
 
 ''' functions to turn the integers from the XML into strings and vice verse (due to the validation) '''
+
+def standardPopName(pop:pypmca.Population):
+
+    varName = getFancyName(pop.name)
+
+    if ('daily' in varName.lower()) or ('cumulative' in varName.lower()):
+        return varName
+
+    standardName = '{} - {}'.format(
+        'Cumulative' if pandas.Series(pop.history).is_monotonic_increasing else 'Daily',
+        varName
+    )
+
+    return standardName
+
+def getFancyName(varName:str):
+
+    varName = varName.replace('_', ' ').lower()
+    varName = varName.replace('non ', 'Non ')
+    varName = varName.replace(' rel', ' Released')
+    varName = varName.replace('vacc ', 'Vaccination ')
+    varName = varName.replace(' cand', ' Candidates')
+    varName = varName.replace('sus ', 'Susceptible ')
+    varName = varName.replace('rec ', 'Recovered ')
+    varName = varName.replace('daily ', 'Daily - ')
+    varName = varName.replace('cumulative ', 'Cumulative - ')
+
+    if varName[-2:] == ' v':
+        varName = varName.replace(' v', ' (Variants)')
+
+    varName = varName.title().replace('Icu', 'ICU')
+
+    return varName
+
+def movementThreshold(series, desiredProportion):
+    if (desiredProportion < 0) or (desiredProportion > 1):
+        print('*** ERROR: the proportion must be between 0 and 1 ***')
+        return None
+    # ratio of unique values to total number of values
+    theRatio = len(set(series))/len(series)
+    if theRatio < desiredProportion:
+        return False
+    else:
+        return True
+
 def tablePriorDist(input):
     if input == None:
         return 3
@@ -78,29 +125,44 @@ def ageRange(modelName:str):
     firstBit = modelName.split('_')[0]
 
     if any([substring in firstBit for substring in ['under', 'less']]):
-        return ', under {}'.format(getSubinteger(firstBit))
+        return 'under {}'.format(getSubinteger(firstBit))
 
     elif any([substring in firstBit for substring in ['over', 'plus']]):
         # extra space to make sure that all strings are the same length
-        return ', over {}'.format(getSubinteger(firstBit))
+        return 'over {}'.format(getSubinteger(firstBit))
 
     elif 'to' in firstBit:
         subStrs = firstBit.split('to')
         fromAge = getSubinteger(subStrs[0])
         toAge = getSubinteger(subStrs[1])
-        return ', {} -> {}'.format(fromAge, toAge)
+        return '{} -> {}'.format(fromAge, toAge)
 
     # 'bc60_2_3_0911', etc
     elif bool(re.search(r'\d', firstBit)):
         fromAge = getSubinteger(firstBit)
         toAge = fromAge + 9
-        return ', {} -> {}'.format(fromAge, toAge)
+        return '{} -> {}'.format(fromAge, toAge)
 
     return ''
 
+def modelDate(modelName):
+
+   firstPass = modelName.split('_')[-1].replace('.pypm', '')
+
+   if firstPass == '':
+       return None
+
+   if len(firstPass) != 4:
+       return firstPass
+
+   month = int(firstPass[:2])
+   day = int(firstPass[2:])
+   # return '{}/{}'.format( )
+   return datetime.date(2021 if month < 5 else 2020, month, day)
+
 def regionInfo(countryName:str, modelName:str):
 
-    theSplit = modelName.replace(" ", "").split('_')
+    theSplit = modelName.replace(' ', '').split('_')
     twoLetter = theSplit[0][:2].upper()
 
     iso3166Code = ''
@@ -131,7 +193,8 @@ def regionInfo(countryName:str, modelName:str):
         # get the numbers from the string
         theDigits = [x for x in modelName.replace('.pypm', '').split('_') if x.isdigit()]
         # print the digits at the end
-        finalName = '{} ({})'.format(countryName.title(), ' '.join(theDigits))
+        # finalName = '{} ({})'.format(countryName.title(), ' '.join(theDigits))
+        finalName = countryName.title()
 
     if countryName == 'BC':
 
@@ -152,7 +215,7 @@ def regionInfo(countryName:str, modelName:str):
             # regionInfo('BC', 'interior_2_8_0309.pypm')
             finalName = lut[ theSplit[0] ].title()
 
-    return '({}) {}'.format(iso3166Code, finalName)
+    return {'code' : iso3166Code, 'name' : finalName}
 
 # def fit_sims(model, n_rep, optimiser):
 #     # Estimate the properties of the estimators, by making many several simulated samples to find the bias and covariance

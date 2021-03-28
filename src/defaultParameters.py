@@ -1,24 +1,33 @@
 #!/usr/bin/python
 
-# for i in list(globals().keys()):
-#     if(i[0] != '_'):
-#         exec('del {}'.format(i))
+for i in list(globals().keys()):
+    if(i[0] != '_'):
+        exec('del {}'.format(i))
 
 import pandas
 import numpy
 import datetime
 
 from syncro import *
-from headerFile import * # downloadModel, tablePriorDist, tableStatus, tableType
-
+from headerFile import *
 env = ssimEnvironment()
 myScenario = scenario()
 
 allURLs = datasheet(myScenario, "epi_Jurisdiction")
 runJuris = datasheet(myScenario, "epi_RuntimeJurisdiction")
+varNameFile = list(datasheet(myScenario, "modelKarlenPypm_ConventionFileIn").FileName)[0]
 
-chosenModel = list(set([x  for x in allURLs.Name if 'British Columbia' in x]))[2]
+renamingMap = pandas.read_csv(varNameFile).drop_duplicates()
+renamingMap['Show'] = 'Yes'
+renamingMap = renamingMap[['Show', 'StandardName', 'Description', 'StockName']]
+saveDatasheet(myScenario, renamingMap, 'modelKarlenPypm_PopulationSelectionTable')
 
+
+renamingMap = renamingMap.drop(columns=['Show', 'StockName']).rename(columns={'StandardName':'Name'})
+saveDatasheet(myScenario, renamingMap, "epi_Variable")
+
+
+chosenModel = list(set([x for x in allURLs.Name if 'ontario' in x.lower()]))[0]
 if runJuris.shape[0] != 0:
     chosenModel = str(runJuris.Jurisdiction[0])
 
@@ -35,7 +44,6 @@ Parameters = dict()
 for key in PARAMETER_ATTIBUTES:
     Parameters[key] = []
 
-Parameters['parameter_type'] = []
 Parameters['prior_function'] = []
 Parameters['prior_mean'] = []
 Parameters['prior_second'] = []
@@ -48,7 +56,6 @@ for param_name in model.parameters:
     for attr_name in PARAMETER_ATTIBUTES:
         Parameters[attr_name].append( getattr(param, attr_name) )
 
-    Parameters['parameter_type'].append( tableType(param.parameter_type) )
     Parameters['prior_function'].append( tablePriorDist(param.prior_function) )
 
     if param.prior_function == None:
@@ -75,10 +82,8 @@ ParameterFrame.loc[variables_with_U_priors, 'mcmc_step'] = 1/numpy.sqrt(12)*Para
 # get the empty data sheet
 defaultParameters = datasheet(myScenario, "modelKarlenPypm_ParameterValues", empty=True)
 
-# assignn the values
 defaultParameters.Name = ParameterFrame.name
 defaultParameters.Description = ParameterFrame.description
-defaultParameters.Type = ParameterFrame.parameter_type
 defaultParameters.Initial = ParameterFrame.initial_value
 defaultParameters.Min = ParameterFrame.parameter_min
 defaultParameters.Max = ParameterFrame.parameter_max
