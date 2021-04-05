@@ -10,28 +10,34 @@ import datetime
 
 from syncro import *
 from headerFile import *
+
 env = ssimEnvironment()
 myScenario = scenario()
 
-allURLs = datasheet(myScenario, "epi_Jurisdiction")
-runJuris = datasheet(myScenario, "epi_RuntimeJurisdiction")
-varNameFile = list(datasheet(myScenario, "modelKarlenPypm_ConventionFileIn").FileName)[0]
+modelChoice = datasheet(myScenario, "modelKarlenPypm_ModelChoices")
+modelsAvail = datasheet(myScenario, "modelKarlenPypm_PypmcaJuris")
 
+chosenModel = list(modelChoice.Location)[0]
+theURL = list(modelsAvail[ modelsAvail.Name == list(modelChoice.Location)[0] ].URL)[0]
+
+varNameFile = list(modelChoice.FileName)[0]
 renamingMap = pandas.read_csv(varNameFile).drop_duplicates()
-renamingMap['Show'] = 'Yes'
-renamingMap = renamingMap[['Show', 'StandardName', 'Description', 'StockName']]
+renamingMap['Show'] = 'No'
+renamingMap.loc[
+    renamingMap.Standard.isin(['Cases - Daily', 'Cases - Cumulative', 'Mortality - Daily', 'Mortality - Cumulative']), 
+    'Show'
+] = 'Yes'
+renamingMap = renamingMap[['Show', 'Standard', 'Description']]
+
 saveDatasheet(myScenario, renamingMap, 'modelKarlenPypm_PopulationSelectionTable')
 
+epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction")
 
-renamingMap = renamingMap.drop(columns=['Show', 'StockName']).rename(columns={'StandardName':'Name'})
-saveDatasheet(myScenario, renamingMap, "epi_Variable")
-
-
-chosenModel = list(set([x for x in allURLs.Name if 'ontario' in x.lower()]))[0]
-if runJuris.shape[0] != 0:
-    chosenModel = str(runJuris.Jurisdiction[0])
-
-theURL = pandas.unique(allURLs[allURLs.Name == chosenModel].Description)[0]
+if chosenModel not in list(epiJurisdiction.Name):
+    saveDatasheet(myScenario,
+                  pandas.DataFrame.from_dict({'Name' : [chosenModel], 'Description' : ['']}),
+                  'epi_Jurisdiction'
+                  )
 
 model = downloadModel(theURL)
 

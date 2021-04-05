@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
+# def main():
+    
 for i in list(globals().keys()):
     if(i[0] != '_'):
         exec('del {}'.format(i))
-
+    
 import requests
 import collections
 import datetime
@@ -38,16 +40,18 @@ def getModelInformation(theInfo:tuple):
     somePredictions = theModel.populations['infected'].history
     if not movementThreshold(somePredictions, 0.5):
         return None
-
+    
     modelInfo = {
         'Code' : regionInfo(landName, filename)['code'],
-        'Country' : landName,
+        'Country' : 'Canada' if landName == 'BC' else landName,  
         'Region' : regionInfo(landName, filename)['name'],
         'AgeRange': ageRange(filename),
         'Date' : modelDate(filename),
         'Name': filename,
         'URL' : modelURL
     }
+    
+    # print(modelInfo)
 
     populationInfo = {}; counter = 0
 
@@ -57,142 +61,136 @@ def getModelInformation(theInfo:tuple):
             continue
 
         populationInfo[counter] = {
-            'StockName' : pop.name,
-            'StandardName' : standardPopName(pop),
+            'Stock' : pop.name,
+            'Standard' : standardPopName(pop),
             'Description' : pop.description.capitalize()
         }; counter += 1
 
     return (modelInfo, populationInfo)
 
+    
+env = ssimEnvironment()
+myScenario = scenario()
 
-def main():
+jurisDictionary = {}
 
-    env = ssimEnvironment()
-    myScenario = scenario()
+standard = ('http://data.ipypm.ca/get_pypm/models/covid19/Canada/bcc_2_6_1224.pypm','Canada')
 
-    jurisDictionary = {}
+result = getModelInformation(standard)
 
-    foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
-    countryFolders = foldersResponse.json()
-    countryList = list(countryFolders.keys())
+first = result[0]
+second = result[1]
 
-    allURLs = []
+foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
+countryFolders = foldersResponse.json()
+# countryList = list(countryFolders.keys())
+countryList = ['Canada', 'BC']
 
-    for country in countryList:
+allURLs = []
 
-        folder = countryFolders[country]
-        countryName = folder.split('/')[-1]
+for country in countryList:
 
-        modelsResponse = requests.get('http://data.ipypm.ca/list_models/{}'.format(folder))
+    folder = countryFolders[country]
+    countryName = folder.split('/')[-1]
 
-        modelFilenames = modelsResponse.json()
-        modelList = list(modelFilenames.keys())
+    modelsResponse = requests.get('http://data.ipypm.ca/list_models/{}'.format(folder))
 
-        for modelName in modelList:
+    modelFilenames = modelsResponse.json()
+    modelList = list(modelFilenames.keys())
 
-            modelFn = modelFilenames[modelName]
+    for modelName in modelList:
 
-            allURLs.append( ('http://data.ipypm.ca/get_pypm/{}'.format(modelFn), countryName) )
+        modelFn = modelFilenames[modelName]
 
-
-    poolSize = 1
-
-    processingInfo = datasheet(myScenario, 'core_Multiprocessing')
-
-    if not processingInfo.empty:
-
-        if processingInfo.EnableMultiprocessing[0] == 'Yes':
-
-            poolSize = max(1, processingInfo.MaximumJobs[0])
-
-            if poolSize >= os.cpu_count():
-
-                poolSize = os.cpu_count() - 1
+        allURLs.append( ('http://data.ipypm.ca/get_pypm/{}'.format(modelFn), countryName) )
 
 
-    modelsAvailable = []
+poolSize = 1
 
-    renamingMap = {}
-    counter = 0
+processingInfo = datasheet(myScenario, 'core_Multiprocessing')
 
+if not processingInfo.empty:
 
-    with ThreadPoolExecutor(max_workers = poolSize) as executor:
+    if processingInfo.EnableMultiprocessing[0] == 'Yes':
 
-        resultGenerator = {executor.submit(getModelInformation, theInfo) : theInfo for theInfo in allURLs}
+        poolSize = max(1, processingInfo.MaximumJobs[0])
 
-        for future in as_completed(resultGenerator):
+        if poolSize >= os.cpu_count():
 
-            data = future.result()
-
-            if data == None: continue
-
-            modelsAvailable.append(data[0])
-
-            for (index, popData) in data[1].items():
-
-                renamingMap[counter] = popData
-                counter += 1
+            poolSize = os.cpu_count() - 1
 
 
-    renamingTable = pandas.DataFrame.from_dict(renamingMap, orient='index')
-    renamingTable = renamingTable.drop_duplicates(subset=['StockName'], keep='first').reset_index(drop=True).sort_values('StockName')
-    renamingTable = renamingTable[['StockName', 'StandardName', 'Description']]
-    addedOnes = pandas.DataFrame([
-        ['daily infected', 'Daily - Infected', 'number of new infections per day'],
-        ['daily deaths', 'Daily - Deaths', 'number of new deaths per day'],
-        ['daily recovered', 'Daily - Recovered', 'number of recoveries per day'],
-        ['daily symptomatic', 'Daily - Symptomatic', 'number of people who have shown symptoms per day'],
-        ['daily infected_v', 'Daily - Infected (Variants)', 'daily number of people infected with variant'],
-        ['daily reported_v', 'Daily - Reported (Variants)', 'variant cases reported per day'],
-        ['daily removed', 'Daily - Removed', 'people removed from the contagious population per day'],
-        ['daily removed_v', 'Daily - Removed (Variants)', 'people removed from the variant contagious population per day'],
-        ], columns=['StockName', 'StandardName', 'Description']
-    )
-    renamingTable = pandas.concat([renamingTable, addedOnes]).dropna().drop_duplicates(subset=['StockName'], keep='first')
-    renamingTable = renamingTable.sort_values('StockName').reset_index(drop=True)
+modelsAvailable = []
 
-    conventionFilename = '{}\\StockToStandard.csv'.format(env.TempDirectory)
-    renamingTable.to_csv(conventionFilename, index=False)
+renamingMap = {}
+counter = 0
 
-    conventionFileInfo = datasheet(myScenario, 'modelKarlenPypm_ConventionFileOut', empty=True)
-    conventionFileInfo = conventionFileInfo.drop(columns=['ConventionFileOutID'])
-    conventionFileInfo.File = [conventionFilename]
-    conventionFileInfo.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
-    saveDatasheet(myScenario, conventionFileInfo, 'modelKarlenPypm_ConventionFileOut')
+with ThreadPoolExecutor(max_workers = poolSize) as executor:
 
-    modelsAvail = pandas.DataFrame(modelsAvailable)
-    modelsAvail = modelsAvail.loc[(modelsAvail.AgeRange=='') & (modelsAvail.Country != 'reference')]
-    # make sure this line runs only once
-    modelsAvail.Date = [x.strftime('%d/%m/%Y') if isinstance(x, datetime.date) else '' for x in modelsAvail.Date]
+    resultGenerator = {executor.submit(getModelInformation, theInfo) : theInfo for theInfo in allURLs}
 
-    saveDatasheet(myScenario, modelsAvail, "modelKarlenPypm_ModelsAvailable")
+    for future in as_completed(resultGenerator):
 
-    regionsOccurringOnce = [x for (x,y) in collections.Counter(list(modelsAvail.Code)).items() if y==1]
-    selectedModels = modelsAvail[modelsAvail.Code.isin(regionsOccurringOnce)]
+        data = future.result()
 
-    differentDates = modelsAvail[modelsAvail.duplicated(['Code'], keep=False)]
-    selectedModels2 = modelsAvail[modelsAvail.duplicated(['Code'], keep=False)].groupby(by='Code').max('Region')
-    selectedModels2.reset_index(level=0, inplace=True)
+        if data == None: continue
 
-    filteredModels = pandas.concat([selectedModels, selectedModels2])
+        modelsAvailable.append(data[0])
 
-    theJurisdictions = datasheet(myScenario, 'epi_Jurisdiction')
+        for (index, popData) in data[1].items():
 
-    ourContribution = pandas.DataFrame({'Name':[], 'Description':[]})
+            renamingMap[counter] = popData
+            counter += 1
 
-    for reg in filteredModels.Region:
-        theThing = '({}) {}'.format(list(filteredModels[filteredModels.Region==reg].Code)[0], reg)
-        if theThing not in list(theJurisdictions.Name):
-            ourContribution = ourContribution.append({
-                'Name' : theThing,
-                'Description' : list(filteredModels[filteredModels.Region==reg].URL)[0]
-            }, ignore_index=True)
 
-    ourContribution = ourContribution.drop_duplicates()
+renamingTable = pandas.DataFrame.from_dict(renamingMap, orient='index')
+renamingTable = renamingTable.drop_duplicates(subset=['Stock'], keep='first').reset_index(drop=True).sort_values('Stock')
+renamingTable = renamingTable[['Stock', 'Standard', 'Description']]
+addedOnes = pandas.DataFrame([
+    ['daily infected', 'Cases - Daily', 'number of new infections per day'],
+    ['daily deaths', 'Mortality - Daily', 'number of new deaths per day'],
+    ['daily recovered', 'Recovered - Daily', 'number of recoveries per day'],
+    ['daily symptomatic', 'Symptomatic - Daily', 'number of people who have shown symptoms per day'],
+    ['daily infected_v', 'Cases (Variants) - Daily', 'daily number of people infected with variant'],
+    ['daily reported_v', 'Reported (Variants) - Daily', 'variant cases reported per day'],
+    ['daily removed', 'Removed - Daily', 'people removed from the contagious population per day'],
+    ['daily removed_v', 'Removed (Variants) - Daily', 'people removed from the variant contagious population per day'],
+    ], columns=['Stock', 'Standard', 'Description']
+)
+renamingTable = pandas.concat([renamingTable, addedOnes]).dropna().drop_duplicates(subset=['Stock'], keep='first')
+renamingTable = renamingTable.sort_values('Stock').reset_index(drop=True)
 
-    if not ourContribution.empty:
-        saveDatasheet(myScenario, ourContribution.drop_duplicates(), "epi_Jurisdiction")
+conventionFilename = '{}\\StockToStandard.csv'.format(env.TempDirectory)
+renamingTable.to_csv(conventionFilename, index=False)
 
-if __name__ == '__main__':
+conventionFileInfo = datasheet(myScenario, 'modelKarlenPypm_ConventionFileOut', empty=True)
+conventionFileInfo = conventionFileInfo.drop(columns=['ConventionFileOutID'])
+conventionFileInfo.File = [conventionFilename]
+conventionFileInfo.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
+saveDatasheet(myScenario, conventionFileInfo, 'modelKarlenPypm_ConventionFileOut')
 
-    main()
+
+modelsAvail = pandas.DataFrame(modelsAvailable)
+modelsAvail = modelsAvail.loc[(modelsAvail.AgeRange=='') & (modelsAvail.Country != 'reference')]
+modelsAvail = modelsAvail.drop(modelsAvail[modelsAvail.Name.str.contains('bcc')].index)
+modelsAvail = modelsAvail.sort_values('Date').drop_duplicates('Region', keep='last')
+modelsAvail.Date = [x.strftime('%d/%m/%Y') if isinstance(x, datetime.date) else '' for x in modelsAvail.Date]
+modelsAvail['LUT'] = modelsAvail[['Country', 'Region']].agg(' - '.join, axis=1)
+saveDatasheet(myScenario, modelsAvail, "modelKarlenPypm_ModelsAvailable")
+
+juris = datasheet(myScenario, "modelKarlenPypm_PypmcaJuris").drop(columns=['PypmcaJurisID'])
+temp = datasheet(myScenario, "modelKarlenPypm_PypmcaJuris", empty=True).drop(columns=['PypmcaJurisID'])
+for name in modelsAvail.LUT:
+    if name not in list(juris.Name):
+        temp = temp.append({
+            'Name' : name,
+            'URL' : list(modelsAvail[modelsAvail.LUT == name].URL)[0]
+        }, ignore_index=True)
+temp = temp.dropna(subset=['Name'])
+if not temp.empty:
+    saveDatasheet(myScenario, temp.dropna(subset=['Name']), "modelKarlenPypm_PypmcaJuris")
+
+
+# if __name__ == '__main__':
+
+#     main()

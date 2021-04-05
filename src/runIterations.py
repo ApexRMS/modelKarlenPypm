@@ -17,30 +17,40 @@ from pypmca.analysis.Optimizer import Optimizer
 env = ssimEnvironment()
 myScenario = scenario()
 
-runControl = datasheet(myScenario, "epi_RunControl")
 modelFileInfo = datasheet(myScenario, "modelKarlenPypm_ModelFile")
-fittingParams = datasheet(myScenario, "modelKarlenPypm_FittingParams")
+runParams = datasheet(myScenario, "modelKarlenPypm_FittingParams")
 
 showThesePops = datasheet(myScenario, "modelKarlenPypm_PopulationSelectionTable")
 showThesePops = showThesePops[showThesePops.Show=='Yes'].drop(columns=['PopulationSelectionTableID', 'Show', 'Description'])
+showThesePops = list(showThesePops.Standard)
 
-def standardName(string):
-    if pop in list(showThesePops.StockName):
-        return list(showThesePops[showThesePops.StockName == pop].StandardName)[0]
+
+epiVariable = datasheet(myScenario, "epi_Variable").drop(columns=['VariableID'])
+weNeedToAdd = {}; counter = 0
+for name in showThesePops:
+    if name not in list(epiVariable.Name):
+        weNeedToAdd[counter] = {'Name' : name, 'Description' : ''}
+        counter += 1
+addThisDict = pandas.DataFrame.from_dict(weNeedToAdd, orient='index')
+
+if not addThisDict.empty:
+    saveDatasheet(myScenario, addThisDict.drop_duplicates(), "epi_Variable")
+    
+renamingMap = pandas.read_csv(list(datasheet(myScenario, "modelKarlenPypm_ModelChoices").FileName)[0])
+
+def standardName(pop):
+    if pop in list(renamingMap.Stock):
+        return list(renamingMap[renamingMap.Stock == pop].Standard)[0]
     else:
         return None
+    
+originalPopNames = list(renamingMap[renamingMap.Standard.isin(showThesePops)].Stock)
 
-numIterations = 2 # 50
-
-startDate = datetime.date(2020, 1, 29)
-endDate = datetime.date.today() + datetime.timedelta(days=15)
+startDate = datetime.datetime(2020, 1, 29, 0, 0)
+endDate = list(runParams.EndDate)[0]
+endDate = datetime.datetime.strptime(endDate, '%Y-%m-%d')
 
 simLength = (endDate-startDate).days
-
-if(runControl.shape[0] != 0):
-    numIterations = runControl.MaximumIteration[0]
-    endDate = runControl.MaximumTimestep[0]
-    endDate = datetime.datetime.strptime(endDate, '%Y-%m-%d')
 
 modelURL = str(modelFileInfo.URL[0])
 
@@ -97,32 +107,32 @@ for index in range(0, ParameterFrame.shape[0]):
 
 theModel.boot()
 
-'''
-this is the fitting step that can be completed using data from the dataBcCdc package.
-I'll make a test for emptiness here and skip this code until the dataBcCdc gets patched up
-'''
-realData = datasheet(myScenario, "epi_DataSummary")
+# '''
+# this is the fitting step that can be completed using data from the dataBcCdc package.
+# I'll make a test for emptiness here and skip this code until the dataBcCdc gets patched up
+# '''
+# realData = datasheet(myScenario, "epi_DataSummary")
 
-if not realData.empty:
+# if not realData.empty:
 
-    myOptimiser = Optimizer(
-        theModel,
-        'daily reported',
-        realData.Value,
-        [int(fittingParams.StartFit[0]), int(fittingParams.EndFit[0])],
-        bool(fittingParams.CumulReset[0]),
-        str(fittingParams.SkipDatesText[0])
-    )
-    popt, pcov = myOptimiser.fit()
+#     myOptimiser = Optimizer(
+#         theModel,
+#         'daily reported',
+#         realData.Value,
+#         [int(runParams.StartFit[0]), int(runParams.EndFit[0])],
+#         bool(runParams.CumulReset[0]),
+#         str(runParams.SkipDatesText[0])
+#     )
+#     popt, pcov = myOptimiser.fit()
 
-    for parName in myOptimiser.variable_names:
-        print('\t'+parName, '= {0:0.3f}'.format(theModel.parameters[parName].get_value()))
+#     for parName in myOptimiser.variable_names:
+#         print('\t'+parName, '= {0:0.3f}'.format(theModel.parameters[parName].get_value()))
 
-    for index in range(len(popt)):
-        name = myOptimiser.variable_names[index]
-        value = popt[index]
-        theModel.parameters[name].set_value(value)
-        theModel.parameters[name].new_initial()
+#     for index in range(len(popt)):
+#         name = myOptimiser.variable_names[index]
+#         value = popt[index]
+#         theModel.parameters[name].set_value(value)
+#         theModel.parameters[name].new_initial()
 
 '''
 finally, the iteration step for generating the data
@@ -130,10 +140,7 @@ finally, the iteration step for generating the data
 simDict = dict()
 simSummaryDict = dict()
 
-legalColumns = list(showThesePops.StockName) 
-legalColumns += [getFancyName(x) for x in legalColumns]
-
-for iter in range(numIterations):
+for iter in range(runParams.Iterations.at[0]):
 
     tempTable = pandas.DataFrame()
 
@@ -142,7 +149,7 @@ for iter in range(numIterations):
 
     for pop in theModel.populations.keys():
         
-        if pop in legalColumns:
+        if pop in originalPopNames:
             
             currentCol = theModel.populations[pop].history
             
@@ -156,9 +163,9 @@ for iter in range(numIterations):
     theDailiesAdded = ['infected', 'deaths', 'recovered', 'smptomatic', 'infected_v', 'reported_v', 'removed', 'removed_v']
     
     for metric in theDailiesAdded:
-        if 'daily {}' .format(metric) in legalColumns:
+        if 'daily {}' .format(metric) in originalPopNames:
             displayName = getFancyName(metric)
-            tempTable['Daily - {}'.format( displayName )] = delta(theModel.populations[metric].history)
+            tempTable['{} - Daily'.format( displayName )] = delta(theModel.populations[metric].history)
 
     meltedTable = pandas.melt(tempTable, id_vars=["Timestep", "Iteration"])
     simSummaryDict[str(iter)] = meltedTable
@@ -170,21 +177,6 @@ epiDatasummary.Iteration = summaryData.Iteration
 epiDatasummary.Timestep = summaryData.Timestep
 epiDatasummary.Variable = summaryData.variable
 epiDatasummary.Value = summaryData.value
-epiDatasummary.Jurisdiction = modelFileInfo.Region[0]
+epiDatasummary.Jurisdiction = modelFileInfo.Region.at[0]
+epiDatasummary.TransformerID = 'modelKarlenPypm_runIterations'
 saveDatasheet(myScenario, epiDatasummary, "epi_DataSummary")
-
-# completeData = datasheet(myScenario, "modelKarlenPypm_CompleteData", empty=True)
-# allData.columns = [camelify(x) for x in allData.columns]
-# for varName in list(allData.columns.intersection(completeData.columns))+['DailyInfected']:
-#     completeData[varName] = allData[varName]
-# saveDatasheet(myScenario, completeData, "modelKarlenPypm_CompleteData")
-
-# dataFilename = '{}\\totalData_{}.csv'.format(env.TempDirectory, modelFileInfo.Name[0])
-
-# # completeData.to_csv(dataFilename)
-
-# # '''
-# # generate XML table columns quickly
-# print()
-# # print('\n'.join(['<column name="{}" dataType="Double" displayName="{}" isOptional="True"/>'.format(camelify(x), theModel.populations[x].description.title()) for x in theModel.populations.keys()]))
-# # '''

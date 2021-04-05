@@ -131,11 +131,11 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
     dataSheet.to_csv(exportFilename, index=False)
 
     if append == False:
-        cmdLine = '"{}" --import --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
-            theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
-        )
-        subprocess.call(cmdLine)
-        shutil.rmtree(tempDir)
+        # cmdLine = '"{}" --import --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
+        #     theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
+        # )
+        # subprocess.call(cmdLine)
+        # shutil.rmtree(tempDir)
 
         env = ssimEnvironment()
         exportFilename2 = '{}\\SSIM_OVERWRITE-{}.csv'.format(env.TransferDirectory, datasheetName)
@@ -148,9 +148,9 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
         subprocess.call(cmdLine)
         shutil.rmtree(tempDir)
 
-        env = ssimEnvironment()
-        exportFilename2 = '{}\\SSIM_APPEND-{}.csv'.format(env.TransferDirectory, datasheetName)
-        dataSheet.to_csv(exportFilename2, index=False)
+        # env = ssimEnvironment()
+        # exportFilename2 = '{}\\SSIM_APPEND-{}.csv'.format(env.TransferDirectory, datasheetName)
+        # dataSheet.to_csv(exportFilename2, index=False)
 
     return None
 

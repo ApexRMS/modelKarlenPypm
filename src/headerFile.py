@@ -10,15 +10,18 @@ from syncro import *
 ''' functions to turn the integers from the XML into strings and vice verse (due to the validation) '''
 
 def standardPopName(pop:pypmca.Population):
-
+    
     varName = getFancyName(pop.name)
-
-    if ('daily' in varName.lower()) or ('cumulative' in varName.lower()):
-        return varName
+    
+    if 'daily' in varName.lower():
+        return '{} - Daily'.format( varName.replace('daily', '').strip().title() )
+    
+    if 'cumulative' in varName.lower():
+        return '{} - Cumulative'.format( varName.replace('cumulative', '').strip().title() )
 
     standardName = '{} - {}'.format(
-        'Cumulative' if pandas.Series(pop.history).is_monotonic_increasing else 'Daily',
-        varName
+        varName,
+        'Cumulative' if pandas.Series(pop.history).is_monotonic_increasing else 'Daily'
     )
 
     return standardName
@@ -34,6 +37,8 @@ def getFancyName(varName:str):
     varName = varName.replace('rec ', 'Recovered ')
     varName = varName.replace('daily ', 'Daily - ')
     varName = varName.replace('cumulative ', 'Cumulative - ')
+    varName = varName.replace('deaths', 'mortality')
+    varName = varName.replace('infected', 'cases')
 
     if varName[-2:] == ' v':
         varName = varName.replace(' v', ' (Variants)')
@@ -213,7 +218,7 @@ def regionInfo(countryName:str, modelName:str):
             finalName = 'British Columbia'
         else:
             # regionInfo('BC', 'interior_2_8_0309.pypm')
-            finalName = lut[ theSplit[0] ].title()
+            finalName = 'British Columbia - {}'.format( lut[ theSplit[0] ].title() )
 
     return {'code' : iso3166Code, 'name' : finalName}
 

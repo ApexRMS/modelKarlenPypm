@@ -5,7 +5,7 @@
       name="modelKarlenPypm_fetchModels"
       isPrimary="True"
       displayName="modelKarlenPypm_fetchModels"
-      programName="python"
+      programName="spyder"
       programArguments="fetchModels.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
@@ -23,19 +23,32 @@
             </datasheet>
           </datasheets>
         </datafeed>
+        <datafeed name="PypmcaJuris" displayName="Pypmca Jurisdictions" dataScope="Project">
+          <datasheets>
+            <datasheet name="PypmcaJuris" displayName="Pypmca Jurisdictions" valueMember="PypmcaJurisID" displayMember="Name">
+              <columns>
+                <column name="PypmcaJurisID" dataType="Integer" isPrimary="True"/>
+                <column name="ProjectID" dataType="Integer"/>
+                <column name="Name" dataType="String"/>
+                <column name="URL" dataType="String"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
         <datafeed name="ModelsAvailable" displayName="Models Available" dataScope="Scenario">
           <datasheets>
             <datasheet name="ModelsAvailable" displayname="Models Available">
               <columns>
                 <column name="ModelsAvailableID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Code" dataType="String" displayName="ISO Code"/>
                 <column name="Country" dataType="String" displayName="Country"/>
                 <column name="Region" dataType="String" displayName="Region"/>
                 <column name="AgeRange" dataType="String" displayName="Age Range"/>
                 <column name="Date" dataType="String" displayName="Date"/>
-                <column name="Name" dataType="String" displayName="Model Name"/>
-                <column name="URL" dataType="String" displayName="Download URL"/>
+                <column name="Name" dataType="String" isHidden="True"/>
+                <column name="Code" dataType="String" isHidden="True"/>
+                <column name="URL" dataType="String" isHidden="True"/>
+                <column name="LUT" dataType="String" isHidden="True"/>
               </columns>
               <validations>
                 <validation validationType="Unique" columns="Code|Country|Region|Name|URL"/>
@@ -47,6 +60,7 @@
       <pipeline>
         <datafeed name="ConventionFileOut" type="Output"/>
         <datafeed name="ModelsAvailable" type="Output"/>
+        <datafeed name="PypmcaJuris" type="Output"/>
       </pipeline>
       <include>
         <transformer name="modelKarlenPypm_fetchParameters"/>
@@ -57,7 +71,7 @@
     <transformer
       name="modelKarlenPypm_fetchParameters"
       displayName="modelKarlenPypm_fetchParameters"
-      programName="python"
+      programName="spyder"
       programArguments="defaultParameters.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
@@ -86,7 +100,7 @@
             </datasheet>
           </datasheets>
         </datafeed>
-        <datafeed name="ModelFile" displayName="Downloadeded Model" dataScope="Scenario">
+        <datafeed name="ModelFile" displayName="Downloaded Model" dataScope="Scenario">
           <datasheets>
             <datasheet name="ModelFile" displayName="Downloaded Model" isSingeRow="True">
               <columns>
@@ -104,20 +118,6 @@
             </datasheet>
           </datasheets>
         </datafeed>
-        <datafeed name="ConventionFileIn" displayName="Population Names" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="ConventionFileIn" displayName="Population Names File" isSingleRow="True">
-              <columns>
-                <column name="ConventionFileInID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="FileName" dataType="String" displayName="File Name" isExternalFile="True"/>
-              </columns>
-              <defaultRecords>
-                <record columns="FileName" values="C:\Users\User\Documents\SyncroSim\Libraries\epi.ssim.temp\StockToStandard.csv"/>
-              </defaultRecords>
-            </datasheet>
-          </datasheets>
-        </datafeed>
         <datafeed name="PopulationSelectionTable" displayName="Population Selection" dataScope="Scenario">
           <datasheets>
             <datasheet name="PopulationSelectionTable" displayName="Population Selection">
@@ -125,10 +125,24 @@
                 <column name="PopulationSelectionTableID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="Show" dataType="Boolean" displayName="Show (Yes/No)"/>
-                <column name="StandardName" dataType="String" displayName="Population Name"/>
+                <column name="Standard" dataType="String" displayName="Population Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
-                <column name="StockName" dataType="String" displayName="Default Name"/>
               </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+        <datafeed name="ModelChoices" displayName="Model Options" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ModelChoices" displayName="Model Options">
+              <columns>
+                <column name="ModelChoiceID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer"/>
+                <column name="Location" dataType="Integer" validationType="Datasheet" formula1="PypmcaJuris" allowDbNull="False"/>
+                <column name="FileName" dataType="String" displayName="Crosswalk" isExternalFile="True"/>
+              </columns>
+              <defaultRecords>
+                <record columns="FileName" values="C:\Users\User\Documents\GitHub\modelKarlenPypm\StockToStandard.csv"/>
+              </defaultRecords>
             </datasheet>
           </datasheets>
         </datafeed>
@@ -136,15 +150,14 @@
       <pipeline>
         <datafeed name="ParameterValues" type="Output"/>
         <datafeed name="ModelFile" type="Output"/>
-        <datafeed name="ConventionFileIn" type="Input"/>
         <datafeed name="PopulationSelectionTable" type="Output"/>
-        <datafeed name="epi_RunControl" type="Input"/>
+        <datafeed name="ModelChoices" type="Input"/>
       </pipeline>
     </transformer>
     <transformer
       name="modelKarlenPypm_runIterations"
       displayName="modelKarlenPypm_runIterations"
-      programName="python"
+      programName="spyder"
       programArguments="runIterations.py"
       extendsTransformer="epi_Primary"
       runContext="LocalOnly"
@@ -157,13 +170,27 @@
                 <column name="FittingParamsID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="StartFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Day To Start Fitting"/>
-                <column name="EndFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Dat To End Fitting"/>
-                <column name="CumulReset" dataType="Integer" valdationType="List" formula1="1:True|0:False"/>
+                <column name="EndFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Day To End Fitting"/>
+                <column name="CumulReset" dataType="Boolean"/>
                 <column name="SkipDatesText" dataType="String" displayName="Days to Skip"/>
+                <column name="Iterations" dataType="Integer"/>
+                <column name="EndDate" dataType="Date" displayName="End Date"/>
               </columns>
               <defaultRecords>
-                <record columns="StartFit|EndFit|CumulReset|SkipDatesText" values="37|350|1|147,45:47"/>
+                <record columns="StartFit|EndFit|SkipDatesText|Iterations|EndDate" values="37|350|147,45:47|2|2021-06-01"/>
               </defaultRecords>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+        <datafeed name="FitVariables" displayName="Fit Variables" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="FitVariables" displayName="Fit Variables">
+              <columns>
+                <column name="FitVariablesID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer"/>
+                <column name="Variable" dataType="String"/>
+                <column name="Value" dataType="Double"/>
+              </columns>
             </datasheet>
           </datasheets>
         </datafeed>
@@ -172,28 +199,27 @@
         <datafeed name="ParameterValues" type="Input"/>
         <datafeed name="ModelFile" type="Input"/>
         <datafeed name="PopulationSelectionTable" type="Input"/>
-        <datafeed name="epi_RunControl" type="Input"/>
         <datafeed name="FittingParams" type="Input"/>
-				<datafeed name="epi_DataSummary" type="Output"/>
+        <datafeed name="ModelChoices" type="Input"/>
+        <datafeed name="epi_DataSummary" type="Both"/>
       </pipeline>
     </transformer>
   </transformers>
   <layouts>
-    <layout name="coreforms_LibraryDatafeeds">
-      <item name="core_RConfig"/>
-    </layout>
     <layout name="coreforms_ScenarioDatafeeds">
       <group name="KarlenModel" displayName="pypmca" appendTo="epi_Models">
         <group name="Inputs" displayName="Inputs" appendTo="KarlenModel">
+          <item name="ModelChoices"/>
           <item name="FittingParams"/>
           <item name="ParameterValues"/>
           <item name="ModelFile"/>
           <item name="PopulationSelectionTable"/>
-          <item name="ConventionFileIn"/>
         </group>
         <group name="Outputs" displayName="Outputs" appendTo="KarlenModel">
           <item name="ModelsAvailable"/>
           <item name="ConventionFileOut"/>
+          <item name="FitVariables"/>
+          <item name="epi_DataSummary" transformerFilter="modelKarlenPypm_runIterations"/>
         </group>
       </group>
     </layout>
