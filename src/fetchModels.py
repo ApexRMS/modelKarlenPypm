@@ -74,13 +74,6 @@ myScenario = scenario()
 
 jurisDictionary = {}
 
-standard = ('http://data.ipypm.ca/get_pypm/models/covid19/Canada/bcc_2_6_1224.pypm','Canada')
-
-result = getModelInformation(standard)
-
-first = result[0]
-second = result[1]
-
 foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
 countryFolders = foldersResponse.json()
 # countryList = list(countryFolders.keys())
@@ -101,7 +94,6 @@ for country in countryList:
     for modelName in modelList:
 
         modelFn = modelFilenames[modelName]
-
         allURLs.append( ('http://data.ipypm.ca/get_pypm/{}'.format(modelFn), countryName) )
 
 
@@ -169,10 +161,9 @@ conventionFileInfo.File = [conventionFilename]
 conventionFileInfo.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
 saveDatasheet(myScenario, conventionFileInfo, 'modelKarlenPypm_ConventionFileOut')
 
-
 modelsAvail = pandas.DataFrame(modelsAvailable)
 modelsAvail = modelsAvail.loc[(modelsAvail.AgeRange=='') & (modelsAvail.Country != 'reference')]
-modelsAvail = modelsAvail.drop(modelsAvail[modelsAvail.Name.str.contains('bcc')].index)
+# modelsAvail = modelsAvail.drop(modelsAvail[modelsAvail.Name.str.contains('bcc')].index)
 modelsAvail = modelsAvail.sort_values('Date').drop_duplicates('Region', keep='last')
 modelsAvail.Date = [x.strftime('%d/%m/%Y') if isinstance(x, datetime.date) else '' for x in modelsAvail.Date]
 modelsAvail['LUT'] = modelsAvail[['Country', 'Region']].agg(' - '.join, axis=1)
@@ -190,7 +181,49 @@ temp = temp.dropna(subset=['Name'])
 if not temp.empty:
     saveDatasheet(myScenario, temp.dropna(subset=['Name']), "modelKarlenPypm_PypmcaJuris")
 
+pypmcaData = datasheet(myScenario, "modelKarlenPypm_PypmcaData").drop(columns=['PypmcaDataID'])
+theSources = datasheet(myScenario, "modelKarlenPypm_PypmcaData", empty=True).drop(columns=['PypmcaDataID'])
 
+karlenSources = requests.get('http://data.ipypm.ca/list_data_folders/covid19').json()
+
+for country in ['Canada', 'BC']: # karlenSources.keys():
+    
+    data_folder = karlenSources[country]
+    success = True
+
+    try:
+        data_url = 'http://data.ipypm.ca/get_data_desc/' + data_folder
+        data_desc_resp = requests.get(data_url)
+    except requests.exceptions.RequestException as error:
+        print(error)
+        success = False
+        
+    if not success:
+        continue
+    
+    data_description = data_desc_resp.json()
+    
+    theCountry = 'Canada - British Columbia' if country == 'BC' else country
+    
+    for region in data_description['regional_data'].keys():
+        
+        theRegion = 'British Columbia' if region == 'BC' else region
+        
+        fullName = '{} - {}'.format(theCountry, theRegion)
+        
+        if fullName not in list(pypmcaData.Name):
+            
+            theSources = theSources.append({
+                'Name' : '{} - {}'.format(theCountry, theRegion),
+                'Country' : country,
+                'Region' : region,
+                'URL' : data_url
+            }, ignore_index=True)
+
+theSources = theSources.dropna(subset=['Name'])
+if not theSources.empty:
+    saveDatasheet(myScenario, theSources, "modelKarlenPypm_PypmcaData")       
+        
 # if __name__ == '__main__':
 
 #     main()

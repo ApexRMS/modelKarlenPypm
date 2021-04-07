@@ -27,7 +27,7 @@ renamingMap.loc[
     renamingMap.Standard.isin(['Cases - Daily', 'Cases - Cumulative', 'Mortality - Daily', 'Mortality - Cumulative']), 
     'Show'
 ] = 'Yes'
-renamingMap = renamingMap[['Show', 'Standard', 'Description']]
+renamingMap = renamingMap[['Show', 'Standard', 'Description', 'Stock']]
 
 saveDatasheet(myScenario, renamingMap, 'modelKarlenPypm_PopulationSelectionTable')
 

@@ -19,11 +19,12 @@ myScenario = scenario()
 
 modelFileInfo = datasheet(myScenario, "modelKarlenPypm_ModelFile")
 runParams = datasheet(myScenario, "modelKarlenPypm_FittingParams")
+# runParams = 
+# runParams.astype({'SkipDatesText':'str'}).dtypes 
 
 showThesePops = datasheet(myScenario, "modelKarlenPypm_PopulationSelectionTable")
 showThesePops = showThesePops[showThesePops.Show=='Yes'].drop(columns=['PopulationSelectionTableID', 'Show', 'Description'])
 showThesePops = list(showThesePops.Standard)
-
 
 epiVariable = datasheet(myScenario, "epi_Variable").drop(columns=['VariableID'])
 weNeedToAdd = {}; counter = 0
@@ -43,6 +44,13 @@ def standardName(pop):
         return list(renamingMap[renamingMap.Stock == pop].Standard)[0]
     else:
         return None
+    
+def stockName(pop):
+    if pop in list(renamingMap.Standard):
+        return list(renamingMap[renamingMap.Standard == pop].Stock)[0]
+    else:
+        return None
+
     
 originalPopNames = list(renamingMap[renamingMap.Standard.isin(showThesePops)].Stock)
 
@@ -107,36 +115,57 @@ for index in range(0, ParameterFrame.shape[0]):
 
 theModel.boot()
 
-# '''
-# this is the fitting step that can be completed using data from the dataBcCdc package.
-# I'll make a test for emptiness here and skip this code until the dataBcCdc gets patched up
-# '''
-# realData = datasheet(myScenario, "epi_DataSummary")
+realData = datasheet(myScenario, "epi_DataSummary").drop(columns=['DataSummaryID', 'TransformerID', 'AgeMin', 'AgeMax', 'Sex'])
 
-# if not realData.empty:
+fittingVar = runParams.FitVariable.values[0]
+    
+if fittingVar in set(realData.Variable):
+    realData = realData[realData.Variable == fittingVar]
+else: 
+    realData = realData[realData.Variable == 'Cases - Cumulative']
+    fittingVar = 'Cases - Cumulative'
 
-#     myOptimiser = Optimizer(
-#         theModel,
-#         'daily reported',
-#         realData.Value,
-#         [int(runParams.StartFit[0]), int(runParams.EndFit[0])],
-#         bool(runParams.CumulReset[0]),
-#         str(runParams.SkipDatesText[0])
-#     )
-#     popt, pcov = myOptimiser.fit()
+if not realData.empty:
+    
+    fittingString = ''
+    
+    if 'cumulative' in runParams.FitVariable.values[0].lower():
+        fittingString += 'total '
+    elif 'daily' in runParams.FitVariable.values[0].lower():
+        fittingString += 'daily '
+        
+    if 'cases' in runParams.FitVariable.values[0].lower():
+        fittingString += 'infected'
+    elif 'reported' in runParams.FitVariable.values[0].lower():
+        fittingString += 'reported'
+    
+    cumulReset = True if runParams.CumulReset.values[0] == True else False
+    
+    colName = stockName(runParams.FitVariable.values[0])
+    
+    startFitDay = 0 if numpy.isnan(runParams.StartFit[0]) else int(runParams.StartFit[0])
+    endFitDay = realData.shape[0] if numpy.isnan(runParams.EndFit[0]) else int(runParams.EndFit[0])
+    
+    myOptimiser = Optimizer(
+        theModel,
+        fittingString,
+        realData.Value.values,
+        [startFitDay, endFitDay],
+        cumulReset,
+        str(runParams.SkipDatesText[0])
+    )
+    popt, pcov = myOptimiser.fit()
+     
+    fitVars = datasheet(myScenario, "modelKarlenPypm_FitVariables", empty=True).drop(columns=['FitVariablesID'])
+        
+    for index in range(len(popt)):
+        name = myOptimiser.variable_names[index]
+        value = popt[index]
+        fitVars = fitVars.append({'Variable':name, 'Value':value}, ignore_index=True)
+        theModel.parameters[name].set_value(value)
+        
+    saveDatasheet(myScenario, fitVars, "modelKarlenPypm_FitVariables")
 
-#     for parName in myOptimiser.variable_names:
-#         print('\t'+parName, '= {0:0.3f}'.format(theModel.parameters[parName].get_value()))
-
-#     for index in range(len(popt)):
-#         name = myOptimiser.variable_names[index]
-#         value = popt[index]
-#         theModel.parameters[name].set_value(value)
-#         theModel.parameters[name].new_initial()
-
-'''
-finally, the iteration step for generating the data
-'''
 simDict = dict()
 simSummaryDict = dict()
 
@@ -153,10 +182,10 @@ for iter in range(runParams.Iterations.at[0]):
             
             currentCol = theModel.populations[pop].history
             
-            if movementThreshold(currentCol, 0.3):
+            if movementThreshold(currentCol, 0.1):
                 
                 tempTable[ standardName(pop) ] = theModel.populations[pop].history
-
+    
     tempTable['Iteration'] = str(iter+1)
     tempTable['Timestep'] = [(startDate+datetime.timedelta(days=x)).strftime('%Y-%m-%d') for x in range(tempTable.shape[0])]
     
@@ -170,7 +199,7 @@ for iter in range(runParams.Iterations.at[0]):
     meltedTable = pandas.melt(tempTable, id_vars=["Timestep", "Iteration"])
     simSummaryDict[str(iter)] = meltedTable
 
-summaryData = pandas.concat(simSummaryDict.values(), ignore_index=True)
+summaryData = pandas.concat(simSummaryDict.values(), ignore_index=True).dropna()
 
 epiDatasummary = datasheet(myScenario, "epi_DataSummary", empty=True)
 epiDatasummary.Iteration = summaryData.Iteration
@@ -178,5 +207,5 @@ epiDatasummary.Timestep = summaryData.Timestep
 epiDatasummary.Variable = summaryData.variable
 epiDatasummary.Value = summaryData.value
 epiDatasummary.Jurisdiction = modelFileInfo.Region.at[0]
-epiDatasummary.TransformerID = 'modelKarlenPypm_runIterations'
+epiDatasummary.TransformerID = 'modelKarlenPypm_D_runIterations'
 saveDatasheet(myScenario, epiDatasummary, "epi_DataSummary")
