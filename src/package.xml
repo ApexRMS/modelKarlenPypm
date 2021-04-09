@@ -8,7 +8,6 @@
       programName="python"
       programArguments="fetchModels.py"
       extendsTransformer="epi_Primary"
-      runContext="LocalOnly"
       isRunnable ="True">
       <datafeeds>
         <datafeed name="ConventionFileOut" displayName="Population Names" dataScope="Scenario">
@@ -283,7 +282,7 @@
           <item name="ConventionFileOut"/>
           <item name="FitVariables"/>
           <item name="DataFileOut"/>
-          <item name="epi_DataSummary" transformerFilter="modelKarlenPypm_runIterations"/>
+          <item name="epi_DataSummary" filterTransformer="modelKarlenPypm_runIterations"/>
         </group>
       </group>
     </layout>
