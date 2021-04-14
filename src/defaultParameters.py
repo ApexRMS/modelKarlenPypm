@@ -14,30 +14,40 @@ from headerFile import *
 env = ssimEnvironment()
 myScenario = scenario()
 
-modelChoice = datasheet(myScenario, "modelKarlenPypm_ModelChoices")
-modelsAvail = datasheet(myScenario, "modelKarlenPypm_PypmcaJuris")
+modelChoice = datasheet(myScenario, "modelKarlenPypm_ModelChoices").drop(columns=['InputID']).iloc[0]
+modelsAvail = datasheet(myScenario, "modelKarlenPypm_PypmcaJuris").drop(columns=['InputID'])
 
-chosenModel = list(modelChoice.Location)[0]
-theURL = list(modelsAvail[ modelsAvail.Name == list(modelChoice.Location)[0] ].URL)[0]
+chosenModel = modelChoice.Location
+theURL = modelsAvail[ modelsAvail.Name == chosenModel ].URL.iloc[0]
 
-varNameFile = list(modelChoice.FileName)[0]
+varNameFile = modelChoice.FileName
 renamingMap = pandas.read_csv(varNameFile).drop_duplicates()
 renamingMap['Show'] = 'No'
 renamingMap.loc[
-    renamingMap.Standard.isin(['Cases - Daily', 'Cases - Cumulative', 'Mortality - Daily', 'Mortality - Cumulative']), 
+    renamingMap.Standard.isin([
+        'Cases - Daily', 'Cases - Cumulative',
+        'Mortality - Daily', 'Mortality - Cumulative',
+        'Infected - Daily', 'Infected - Cumulative',
+        'Infected (Variants) - Daily', 'Infected (Variants)  - Cumulative',
+        'Cases (Variants) - Daily', 'Cases (Variants) - Cumulative',
+        'Hospitalized - Cumulative',
+        'In Hospital - Daily',
+        'In ICU - Daily',
+        'ICU Admissions - Cumulative'
+    ]),
     'Show'
 ] = 'Yes'
 renamingMap = renamingMap[['Show', 'Standard', 'Description', 'Stock']]
 
 saveDatasheet(myScenario, renamingMap, 'modelKarlenPypm_PopulationSelectionTable')
 
-epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction")
+epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction").drop(columns=['JurisdictionID'])
 
 if chosenModel not in list(epiJurisdiction.Name):
     saveDatasheet(myScenario,
-                  pandas.DataFrame.from_dict({'Name' : [chosenModel], 'Description' : ['']}),
-                  'epi_Jurisdiction'
-                  )
+        pandas.DataFrame.from_dict({'Name' : [chosenModel], 'Description' : ['']}),
+        'epi_Jurisdiction'
+    )
 
 model = downloadModel(theURL)
 
@@ -79,11 +89,11 @@ for key in Parameters.keys():
     ParameterFrame[key] = Parameters[key]
 
 # recommended MCMC step is half of the standard deviation
-variables_with_N_priors = list(ParameterFrame[ParameterFrame.prior_function == 'norm'].index)
-ParameterFrame.loc[variables_with_N_priors, 'mcmc_step'] = 0.5*ParameterFrame.loc[variables_with_N_priors, 'prior_second']
+varsWithNPriors = list(ParameterFrame[ParameterFrame.prior_function == 'norm'].index)
+ParameterFrame.loc[varsWithNPriors, 'mcmc_step'] = 0.5*ParameterFrame.loc[varsWithNPriors, 'prior_second']
 
-variables_with_U_priors = list(ParameterFrame[ParameterFrame.prior_function == 'uniform'].index)
-ParameterFrame.loc[variables_with_U_priors, 'mcmc_step'] = 1/numpy.sqrt(12)*ParameterFrame.loc[variables_with_U_priors, 'prior_second']
+varsWithUPriors = list(ParameterFrame[ParameterFrame.prior_function == 'uniform'].index)
+ParameterFrame.loc[varsWithUPriors, 'mcmc_step'] = 1/numpy.sqrt(12)*ParameterFrame.loc[varsWithUPriors, 'prior_second']
 
 # get the empty data sheet
 defaultParameters = datasheet(myScenario, "modelKarlenPypm_ParameterValues", empty=True)
@@ -103,7 +113,7 @@ defaultParameters.MCMCStep = ParameterFrame.mcmc_step
 saveDatasheet(myScenario, defaultParameters, "modelKarlenPypm_ParameterValues")
 
 # download informnation of the Pypm file
-pypmInfo = datasheet(myScenario, "modelKarlenPypm_ModelFile", empty=True)
+pypmInfo = datasheet(myScenario, "modelKarlenPypm_ModelFile", empty=True).drop(columns=['InputID'])
 
 pypmInfo.Region = [chosenModel]
 pypmInfo.Name = [model.name]

@@ -4,18 +4,22 @@ import pycountry
 import pandas
 import datetime
 import pypmca
+import sys
 
 from syncro import *
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 ''' functions to turn the integers from the XML into strings and vice verse (due to the validation) '''
 
 def standardPopName(pop:pypmca.Population):
-    
+
     varName = getFancyName(pop.name)
-    
+
     if 'daily' in varName.lower():
         return '{} - Daily'.format( varName.replace('daily', '').strip().title() )
-    
+
     if 'cumulative' in varName.lower():
         return '{} - Cumulative'.format( varName.replace('cumulative', '').strip().title() )
 
@@ -28,6 +32,15 @@ def standardPopName(pop:pypmca.Population):
 
 def getFancyName(varName:str):
 
+    interval = ''
+
+    if 'daily' in varName:
+        interval = 'daily'
+        varName = varName.replace('daily', '').replace('-', '').strip()
+    elif 'total' in varName:
+        interval = 'cumulative'
+        varName = varName.replace('total', '').replace('-', '').strip()
+
     varName = varName.replace('_', ' ').lower()
     varName = varName.replace('non ', 'Non ')
     varName = varName.replace(' rel', ' Released')
@@ -35,15 +48,17 @@ def getFancyName(varName:str):
     varName = varName.replace(' cand', ' Candidates')
     varName = varName.replace('sus ', 'Susceptible ')
     varName = varName.replace('rec ', 'Recovered ')
-    varName = varName.replace('daily ', 'Daily - ')
-    varName = varName.replace('cumulative ', 'Cumulative - ')
+
     varName = varName.replace('deaths', 'mortality')
-    varName = varName.replace('infected', 'cases')
+    varName = varName.replace('reported', 'cases')
 
     if varName[-2:] == ' v':
         varName = varName.replace(' v', ' (Variants)')
 
     varName = varName.title().replace('Icu', 'ICU')
+
+    if interval != '':
+        varName = '{} - {}'.format(varName, interval.title())
 
     return varName
 
@@ -150,20 +165,31 @@ def ageRange(modelName:str):
 
     return ''
 
+def modelVersion(modelName):
+
+    if 'reference' in modelName:
+        return None
+    modelName = modelName.replace('.pypm', '').replace('_d', '')
+    first, sec = modelName.split('_')[1:3]
+    return '{}.{}'.format(first, sec)
+
 def modelDate(modelName):
 
-   firstPass = modelName.split('_')[-1].replace('.pypm', '')
+    if 'reference' in modelName:
+        return None
 
-   if firstPass == '':
-       return None
+    modelName = modelName.replace('.pypm', '').replace('_d', '')
+    theStub = modelName.split('_')[-1]
 
-   if len(firstPass) != 4:
-       return firstPass
+    if theStub == '':
+        return None
+    if len(theStub) != 4:
+        return None
 
-   month = int(firstPass[:2])
-   day = int(firstPass[2:])
-   # return '{}/{}'.format( )
-   return datetime.date(2021 if month < 5 else 2020, month, day)
+    month = int(theStub[:2])
+    day = int(theStub[2:])
+    return datetime.date(2021 if month < 5 else 2020, month, day)
+
 
 def regionInfo(countryName:str, modelName:str):
 
