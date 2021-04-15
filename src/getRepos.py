@@ -17,17 +17,28 @@ from headerFile import *
 env = ssimEnvironment()
 myScenario = scenario()
 
-jurisDictionary = {}
-
 foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
 countryFolders = foldersResponse.json()
 countryList = list(countryFolders.keys())
 
 modelsAvailable = []
 
-renamingMap = {}; counter = 0
+renamingMap = {}; renamingCounter = 0
 
-for country in  countryList:
+PARAMETER_ATTIBUTES = ['name', 'description', 'initial_value', 'parameter_min', 'parameter_max']
+paramDict = dict()
+
+for key in PARAMETER_ATTIBUTES:
+    paramDict[key] = []
+
+paramDict['prior_function'] = []
+paramDict['prior_mean'] = []
+paramDict['prior_second'] = []
+paramDict['status'] = []
+
+defaultParameters = pandas.DataFrame()
+
+for country in ['Canada']: # countryList:
 
     folder = countryFolders[country]
     countryName = folder.split('/')[-1]
@@ -39,12 +50,17 @@ for country in  countryList:
 
     for modelName in modelList:
 
+        print(modelName)
+
         modelFn = modelFilenames[modelName]
         filename = modelFn.split('/')[-1]
 
         modelURL = 'http://data.ipypm.ca/get_pypm/{}'.format(modelFn)
 
-        theModel = downloadModel(modelURL)
+        for i in range(0,9):
+            theModel = downloadModel(modelURL)
+            if isinstance(theModel, pypmca.Model):
+                break
 
         '''
             run the model for a few time steps to make sure it's good
@@ -60,17 +76,36 @@ for country in  countryList:
             continue
 
         somePredictions = theModel.populations['infected'].history
-        if not movementThreshold(somePredictions, 0.5):
+        if not movementThreshold(somePredictions, 0.2):
             continue
 
+        if countryName == 'BC':
+            countryName = 'Canada'
+        elif country == 'EU':
+            countryName = completeDescrip['name']
+        elif countryName == 'California':
+            countryName = 'USA'
+
+        modelRegion = regionInfo(country, filename)['name']
+        modelCode =regionInfo(country, filename)['code']
+        modelAgeRange = ageRange(filename)
+        modelVersionNum = modelVersion(filename)
+
+        fullModelDisplayName = (
+            '{} - {} ({}, ver. {})'.format(countryName, modelRegion, modelAgeRange, modelVersionNum)
+            if modelAgeRange != ''
+            else '{} - {} (ver. {})'.format(countryName, modelRegion, modelVersionNum)
+        )
+
         modelsAvailable.append({
-            'Code' : regionInfo(countryName, filename)['code'],
+            'LUT' : fullModelDisplayName,
+            'Code' : modelCode,
             'Country' : countryName,
-            'Region' : regionInfo(countryName, filename)['name'],
-            'Version' : modelVersion(filename),
-            'AgeRange': ageRange(filename),
+            'Region' : modelRegion,
+            'Version' : modelVersionNum,
+            'AgeRange': modelAgeRange,
             'Date' : modelDate(filename),
-            'Name': filename,
+            'FileName': filename,
             'URL' : modelURL
         })
 
@@ -79,136 +114,215 @@ for country in  countryList:
             if 'frac' in pop.name.lower():
                 continue
 
-            renamingMap[counter] = {
+            renamingMap[renamingCounter] = {
                 'Stock' : pop.name,
                 'Standard' : standardPopName(pop),
                 'Description' : pop.description.capitalize()
-            }; counter += 1
+            }; renamingCounter += 1
 
 
-renamingTable = pandas.DataFrame.from_dict(renamingMap, orient='index')
-renamingTable = renamingTable.drop_duplicates(subset=['Stock'], keep='first').reset_index(drop=True).sort_values('Stock')
-renamingTable = renamingTable[['Stock', 'Standard', 'Description']]
-addedOnes = pandas.DataFrame([
-    ['daily infected', 'Cases - Daily', 'number of new infections per day'],
-    ['daily deaths', 'Mortality - Daily', 'number of new deaths per day'],
-    ['daily recovered', 'Recovered - Daily', 'number of recoveries per day'],
-    ['daily symptomatic', 'Symptomatic - Daily', 'number of people who have shown symptoms per day'],
-    ['daily infected_v', 'Cases (Variants) - Daily', 'daily number of people infected with variant'],
-    ['daily reported_v', 'Reported (Variants) - Daily', 'variant cases reported per day'],
-    ['daily removed', 'Removed - Daily', 'people removed from the contagious population per day'],
-    ['daily removed_v', 'Removed (Variants) - Daily', 'people removed from the variant contagious population per day'],
-    ], columns=['Stock', 'Standard', 'Description']
-)
-renamingTable = pandas.concat([renamingTable, addedOnes]).dropna().drop_duplicates(subset=['Stock'], keep='first')
-renamingTable = renamingTable.sort_values('Stock').reset_index(drop=True)
+        for paramName in theModel.parameters:
 
-crosswalkFilename = '{}\\StockToStandard.csv'.format(env.TempDirectory)
-renamingTable.to_csv(crosswalkFilename, index=False)
+            param = theModel.parameters[paramName]
 
-crosswalkFile = datasheet(myScenario, 'modelKarlenPypm_CrosswalkFile', empty=True)
-crosswalkFile = crosswalkFile.drop(columns=['InputID'])
-crosswalkFile.File = [crosswalkFilename]
-crosswalkFile.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
-saveDatasheet(myScenario, crosswalkFile, 'modelKarlenPypm_CrosswalkFile')
+            paramDict['model'] = fullModelDisplayName
+            for attrName in PARAMETER_ATTIBUTES:
+                paramDict[attrName].append( getattr(param, attrName) )
 
-modelsAvail = pandas.DataFrame(modelsAvailable)
-modelsAvail = modelsAvail.sort_values('Date').drop_duplicates('Region', keep='last')
-modelsAvail.Date = [x.strftime('%d/%m/%Y') if isinstance(x, datetime.date) else '' for x in modelsAvail.Date]
-modelsAvail['LUT'] = modelsAvail[['Country', 'Region']].agg(' - '.join, axis=1)
-saveDatasheet(myScenario, modelsAvail, "modelKarlenPypm_ModelsAvailable")
+            paramDict['prior_function'].append( tablePriorDist(param.prior_function) )
 
+            if param.prior_function == None:
+                paramDict['prior_mean'].append('')
+                paramDict['prior_second'].append('')
+            else:
+                paramDict['prior_mean'].append(param.prior_parameters['mean'])
+                paramDict['prior_second'].append(list(param.prior_parameters.values())[1])
+
+            paramDict['status'].append( tableStatus(param.get_status()) )
+
+        defaultParameters = pandas.concat([
+            defaultParameters,
+            pandas.DataFrame(paramDict)
+        ]) # .drop_duplicates(subset=['model'])
+
+modelsAvail = pandas.DataFrame(modelsAvailable).drop_duplicates()
+modelsAvail['LUT'] = [
+    '{} - {} ({}, ver. {})'.format(row.Country, row.Region, row.AgeRange, row.Version)
+    if row.AgeRange != ''
+    else '{} - {} (ver. {})'.format(row.Country, row.Region, row.Version)
+    for index, row in modelsAvail.iterrows()
+]
 # filtering all the models
 modelsAvail = modelsAvail.loc[(modelsAvail.AgeRange=='') & (modelsAvail.Country != 'reference')]
+pypmcaModels = datasheet(myScenario, "modelKarlenPypm_PypmcaModels")
+saveDatasheet(
+    myScenario,
+    dataFrameDifference(modelsAvail, pypmcaModels, 'LUT'),
+    "modelKarlenPypm_PypmcaModels"
+)
 
-juris = datasheet(myScenario, "modelKarlenPypm_PypmcaJuris").drop(columns=['InputID'])
-temp = datasheet(myScenario, "modelKarlenPypm_PypmcaJuris", empty=True).drop(columns=['InputID'])
-for name in modelsAvail.LUT:
 
-    # only looking at Canada for now, but we can have all the regions later
-    if 'Canada' not in name:
-        continue
+defaultParameters.columns = list(map(camelify, defaultParameters.columns))
+saveDatasheet(myScenario, defaultParameters, "modelKarlenPypm_ParameterValues")
 
-    if name not in list(juris.Name):
-        temp = temp.append({
-            'Name' : name,
-            'URL' : list(modelsAvail[modelsAvail.LUT == name].URL)[0]
-        }, ignore_index=True)
-temp = temp.dropna(subset=['Name'])
-if not temp.empty:
-    saveDatasheet(myScenario, temp.dropna(subset=['Name']), "modelKarlenPypm_PypmcaJuris")
+# renamingTable = pandas.DataFrame.from_dict(renamingMap, orient='index')
+# renamingTable = renamingTable.drop_duplicates(subset=['Stock'], keep='first').reset_index(drop=True).sort_values('Stock')
+# renamingTable = renamingTable[['Stock', 'Standard', 'Description']]
+# addedOnes = pandas.DataFrame([
+#     ['daily infected', 'Infected - Daily', 'number of new infections per day'],
+#     ['daily deaths', 'Deaths - Daily', 'number of new deaths per day'],
+#     ['daily recovered', 'Recovered - Daily', 'number of recoveries per day'],
+#     ['daily symptomatic', 'Symptomatic - Daily', 'number of people who have shown symptoms per day'],
+#     ['daily infected_v', 'Infected (Variants) - Daily', 'daily number of people infected with variant'],
+#     ['daily reported_v', 'Reported (Variants) - Daily', 'variant cases reported per day'],
+#     ['daily removed', 'Removed - Daily', 'people removed from the contagious population per day'],
+#     ['daily removed_v', 'Removed (Variants) - Daily', 'people removed from the variant contagious population per day'],
+#     ], columns=['Stock', 'Standard', 'Description']
+# )
+# renamingTable = pandas.concat([renamingTable, addedOnes]).dropna().drop_duplicates(subset=['Stock'], keep='first')
+# renamingTable = renamingTable.sort_values('Stock').reset_index(drop=True)
 
-allSources = datasheet(myScenario, "modelKarlenPypm_DataAvailable", empty=True).drop(columns=['InputID'])
+# pypmcaCrosswalk = datasheet(myScenario, "modelKarlenPypm_PypmcaCrosswalk")
+# dataFrameDifference(renamingTable, pypmcaCrosswalk, 'Stock')
+# saveDatasheet(
+#     myScenario,
+#     dataFrameDifference(renamingTable, pypmcaCrosswalk, 'Stock'),
+#     "modelKarlenPypm_PypmcaCrosswalk"
+# )
 
-karlenSources = requests.get('http://data.ipypm.ca/list_data_folders/covid19').json()
+# renamingTable['PackageName'] = 'modelKarlenPypm'
+# renamingTable = renamingTable[['PackageName', 'Stock', 'Standard', 'Description']]
 
-for country in karlenSources.keys():
+# crosswalkFilename = '{}\\StockToStandard.csv'.format(env.TransferDirectory)
+# renamingTable.to_csv(crosswalkFilename, index=False)
 
-    data_folder = karlenSources[country]
-    success = True
+# crosswalkFile = datasheet(myScenario, 'modelKarlenPypm_CrosswalkFile', empty=True)
+# crosswalkFile.File = [crosswalkFilename]
+# crosswalkFile.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
+# saveDatasheet(myScenario, crosswalkFile, 'modelKarlenPypm_CrosswalkFile')
 
-    try:
-        data_url = 'http://data.ipypm.ca/get_data_desc/{}'.format(data_folder)
-        data_desc_resp = requests.get(data_url)
-    except requests.exceptions.RequestException as error:
-        print(error)
-        success = False
 
-    if not success:
-        continue
 
-    dataDescription = data_desc_resp.json()
 
-    theCountry = 'Canada - British Columbia' if country == 'BC' else country
 
-    for region in dataDescription['regional_data'].keys():
 
-        ageStructure = 'No'
-        if 'age' in dataDescription['regional_data'][region]['reported']['total']['filename']:
-            ageStructure = 'Yes'
-        elif len( ''.join(re.findall('\d+', region)) ) >= 2:
-            ageStructure = 'Yes'
 
-        allSources = allSources.append({
-                'Country' : country,
-                'Region' : region,
-                'AgeStructure': ageStructure,
-                'URL' : data_url
-            }, ignore_index=True)
+# juris = datasheet(myScenario, 'modelKarlenPypm_PypmcaJuris')
+# temp = datasheet(myScenario, 'modelKarlenPypm_PypmcaJuris', empty=True)
+# for name in modelsAvail.LUT:
 
-allSources = allSources.dropna()
-saveDatasheet(myScenario, allSources, "modelKarlenPypm_DataAvailable")
+#     # only looking at Canada for now, but we can have all the regions later
+#     if 'Canada' not in name:
+#         continue
 
-pypmcaData = datasheet(myScenario, "modelKarlenPypm_PypmcaData").drop(columns=['InputID'])
-addThese = datasheet(myScenario, "modelKarlenPypm_PypmcaData", empty=True).drop(columns=['InputID'])
+#     if name not in list(juris.Name):
+#         temp = temp.append({
+#             'Name' : name,
+#             'URL' : list(modelsAvail[modelsAvail.LUT == name].URL)[0]
+#         }, ignore_index=True)
+# temp = temp.dropna(subset=['Name'])
+# # if not temp.empty:
+#     # saveDatasheet(myScenario, temp.dropna(subset=['Name']), 'modelKarlenPypm_PypmcaJuris')
 
-for index, row in allSources.iterrows():
 
-    theCountry = row.Country
-    theRegion = row.Region
 
-    if theCountry not in ["BC", "Canada"]:
-        continue
 
-    theCountry = 'Canada - British Columbia' if theCountry == 'BC' else theCountry
 
-    if theRegion == 'BC':
-        theRegion = 'British Columbia'
-    elif theRegion == "NWT":
-        theRegion = "Northwest Territories"
-    elif theRegion == "PEI":
-        theRegion = "Prince Edward Island"
 
-    fullName = '{} - {}'.format(theCountry, theRegion)
 
-    if fullName not in list(pypmcaData.Name):
 
-        addThese = addThese.append({
-            'Name' : fullName,
-            'Country' : row.Country, # theCountry,
-            'Region' : row.Region,
-            'URL' : row.URL
-        }, ignore_index=True)
 
-if not addThese.empty:
-    saveDatasheet(myScenario, addThese, "modelKarlenPypm_PypmcaData")
+
+
+
+
+
+
+# crosswalkFilename = '{}\\StockToStandard.csv'.format(env.TempDirectory)
+# renamingTable.to_csv(crosswalkFilename, index=False)
+
+# crosswalkFile = datasheet(myScenario, 'modelKarlenPypm_CrosswalkFile', empty=True)
+# crosswalkFile = crosswalkFile.drop(columns=['InputID'])
+# crosswalkFile.File = [crosswalkFilename]
+# crosswalkFile.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
+# # saveDatasheet(myScenario, crosswalkFile, 'modelKarlenPypm_CrosswalkFile')
+
+
+
+
+# allSources = datasheet(myScenario, 'modelKarlenPypm_PypmcaData', empty=True)
+
+# karlenSources = requests.get('http://data.ipypm.ca/list_data_folders/covid19').json()
+
+# for country in karlenSources.keys():
+
+#     data_folder = karlenSources[country]
+#     success = True
+
+#     try:
+#         data_url = 'http://data.ipypm.ca/get_data_desc/{}'.format(data_folder)
+#         data_desc_resp = requests.get(data_url)
+#     except requests.exceptions.RequestException as error:
+#         print(error)
+#         success = False
+
+#     if not success:
+#         continue
+
+#     dataDescription = data_desc_resp.json()
+
+#     theCountry = 'Canada - British Columbia' if country == 'BC' else country
+
+#     for region in dataDescription['regional_data'].keys():
+
+#         break
+
+#         ageStructure = 'No'
+#         if 'age' in dataDescription['regional_data'][region]['reported']['total']['filename']:
+#             ageStructure = 'Yes'
+#         elif len( ''.join(re.findall('\d+', region)) ) >= 2:
+#             ageStructure = 'Yes'
+
+#         allSources = allSources.append({
+#                 'Country' : country,
+#                 'Region' : region,
+#                 'AgeStructure': ageStructure,
+#                 'URL' : data_url
+#             }, ignore_index=True)
+
+# allSources = allSources.dropna()
+# # saveDatasheet(myScenario, allSources, 'modelKarlenPypm_DataAvailable')
+
+# pypmcaData = datasheet(myScenario, 'modelKarlenPypm_PypmcaData').drop(columns=['InputID'])
+# addThese = datasheet(myScenario, 'modelKarlenPypm_PypmcaData', empty=True).drop(columns=['InputID'])
+
+# for index, row in allSources.iterrows():
+
+#     theCountry = row.Country
+#     theRegion = row.Region
+
+#     if theCountry not in ['BC', 'Canada']:
+#         continue
+
+#     theCountry = 'Canada - British Columbia' if theCountry == 'BC' else theCountry
+
+#     if theRegion == 'BC':
+#         theRegion = 'British Columbia'
+#     elif theRegion == 'NWT':
+#         theRegion = 'Northwest Territories'
+#     elif theRegion == 'PEI':
+#         theRegion = 'Prince Edward Island'
+
+#     fullName = '{} - {}'.format(theCountry, theRegion)
+
+#     if fullName not in list(pypmcaData.Name):
+
+#         addThese = addThese.append({
+#             'Name' : fullName,
+#             'Country' : row.Country, # theCountry,
+#             'Region' : row.Region,
+#             'URL' : row.URL
+        # }, ignore_index=True)
+
+# if not addThese.empty:
+#     saveDatasheet(myScenario, addThese, 'modelKarlenPypm_PypmcaData')

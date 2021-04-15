@@ -9,11 +9,11 @@
       programArguments="getRepos.py"
       isRunnable ="True">
       <datafeeds>
-        <datafeed name="CrosswalkFile" displayName="Population Names" dataScope="Scenario">
+        <datafeed name="CrosswalkFile" displayName="Crosswalk File" dataScope="Scenario">
           <datasheets>
-            <datasheet name="CrosswalkFile" displayName="Population Names File" isSingeRow="True">
+            <datasheet name="CrosswalkFile" displayName="Crosswalk File" isSingeRow="True">
               <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
+                <column name="CrosswalkFileID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
                 <column name="File" displayName="File" dataType="String" isExternalFile="True"/>
                 <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
@@ -21,95 +21,116 @@
             </datasheet>
           </datasheets>
         </datafeed>
-        <datafeed name="PypmcaJuris" displayName="PypmcaJuris" dataScope="Project">
+        <datafeed name="PypmcaCrosswalk" dataScope="Project">
           <datasheets>
-            <datasheet name="PypmcaJuris" valueMember="InputID" displayMember="Name">
+            <datasheet name="PypmcaCrosswalk" valueMember="PypmcaCrosswalkID" displayMember="Standard">
               <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
-                <column name="ProjectID" dataType="Integer"/>
-                <column name="Name" dataType="String"/>
-                <column name="URL" dataType="String"/>
+                <column name="PypmcaCrosswalkID" dataType="Integer" isPrimary="True"/>
+                <column name="ProjectID" dataType="Integer" isOptional="True"/>
+                <column name="Stock" dataType="String" displayName="Model Variable Name"/>
+                <column name="Standard" dataType="String" displayName="epi_Variable Name"/>
+                <column name="Description" dataType="String"/>
               </columns>
             </datasheet>
           </datasheets>
         </datafeed>
-        <datafeed name="PypmcaData" displayNAme="PypmcaData" dataScope="Project">
+        <datafeed name="PypmcaData" dataScope="Project">
           <datasheets>
-            <datasheet name="PypmcaData" valueMember="InputID" displayMember="Name">
+            <datasheet name="PypmcaData" valueMember="PypmcaDataID" displayMember="Name">
               <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
+                <column name="PypmcaDataID" dataType="Integer" isPrimary="True"/>
                 <column name="ProjectID" dataType="Integer"/>
                 <column name="Name" dataType="String"/>
                 <column name="Country" dataType="String"/>
                 <column name="Region" dataType="String"/>
-                <column name="URL" dataType="String"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="ModelsAvailable" displayName="Models Available" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="ModelsAvailable" displayname="Models Available">
-              <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Country" dataType="String"/>
-                <column name="Region" dataType="String"/>
-                <column name="Version" dataType="String"/>
-                <column name="AgeRange" dataType="String" displayName="Age Range"/>
-                <column name="Date" dataType="String"/>
-                <column name="Name" dataType="String" isVisible="False"/>
-                <column name="Code" dataType="String" isVisible="False"/>
-                <column name="URL" dataType="String" isVisible="False"/>
-                <column name="LUT" dataType="String" isVisible="False"/>
-              </columns>
-              <validations>
-                <validation validationType="Unique" columns="Code|Country|Region|Name|URL"/>
-              </validations>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="DataAvailable" displayName="Data Sets Available" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="DataAvailable" displayname="Data Sets Available">
-              <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Country" dataType="String" displayName="Country"/>
-                <column name="Region" dataType="String" displayName="Region"/>
                 <column name="AgeStructure" dataType="Boolean" displayName="Age Structure"/>
                 <column name="URL" dataType="String" isVisible="False"/>
               </columns>
             </datasheet>
           </datasheets>
         </datafeed>
+        <datafeed name="PypmcaModels" dataScope="Project">
+          <datasheets>
+            <datasheet name="PypmcaModels" valueMember="PypmcaModelsID" displayMember="LUT">
+              <columns>
+                <column name="PypmcaModelsID" dataType="Integer" isPrimary="True"/>
+                <column name="ProjectID" dataType="Integer" isOptional="True"/>
+                <column name="LUT" dataType="String" displayName="Jurisdiction"/>
+                <column name="Country" dataType="String"/>
+                <column name="Region" dataType="String"/>
+                <column name="Version" dataType="String"/>
+                <column name="AgeRange" dataType="String" displayName="Age Range"/>
+                <column name="Date" dataType="String"/>
+                <column name="Code" dataType="String" isVisible="False"/>
+                <column name="FileName" dataType="String" isVisible="False"/>
+                <column name="URL" dataType="String" isVisible="False"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+        <datafeed name="ParameterValues" displayName="Parameter Values" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ParameterValues" displayname="Parameter Values" viewFilterColumn="Model">
+              <columns>
+                <column name="ParameterValuesID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="Model" dataType="Integer" validationType="Datasheet" formula1="PypmcaModels" allowDbNull="False" isCompositeIndex="True"/>
+                <column name="Name" dataType="String" displayName="Parameter Name"/>
+                <column name="Description" dataType="String" displayName="Description"/>
+                <column name="InitialValue" dataType="Double" displayName="Initial Value"/>
+                <column name="ParameterMin" dataType="Double" displayName="Minimum Value"/>
+                <column name="ParameterMax" dataType="Double" displayName="Maximum Value"/>
+                <column name="Status" dataType="Integer" validationType="List" formula1="1:fixed|2:variable" displayName="Fixed/Variable"/>
+                <column name="PriorFunction" dataType="Integer" displayName="Prior Distribution" validationType="List" formula1="1:uniform|2:norm|3:"/>
+                <column name="PriorMean" dataType="Double" displayName="Prior Mean"/>
+                <column name="PriorSecond" dataType="Double" validationType="Decimal" validationCondition="GreaterEqual" formula1="0.0" displayName="Prior SD/Half-width"/>
+              </columns>
+              <!-- <validations>
+                <validation validationType="Unique" columns="Model|Name"/>
+              </validations> -->
+            </datasheet>
+          </datasheets>
+        </datafeed>
       </datafeeds>
       <pipeline>
         <datafeed name="CrosswalkFile"/>
-        <datafeed name="ModelsAvailable"/>
-        <datafeed name="PypmcaJuris"/>
+        <datafeed name="PypmcaCrosswalk"/>
         <datafeed name="PypmcaData"/>
-        <datafeed name="DataAvailable"/>
+        <datafeed name="PypmcaModels"/>
+        <datafeed name="ParameterValues"/>
       </pipeline>
       <include>
-        <transformer name="getParameters"/>
-        <transformer name="getData"/>
-        <transformer name="runIterations"/>
+        <!-- <transformer name="getParameters"/> -->
+        <!-- <transformer name="getData"/> -->
+        <!-- <transformer name="runIterations"/> -->
       </include>
     </transformer>
-    <transformer
+    <!-- <transformer
       name="getParameters"
       displayName="modelKarlenPypm_B_getParameters"
       programName="spyder"
       programArguments="defaultParameters.py"
       isRunnable ="True">
       <datafeeds>
+        <datafeed name="ModelChoices" displayName="Model Options" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ModelChoices" displayName="Model Options" isSingleRow="True">
+              <columns>
+                <column name="ModelChoicesID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer"/>
+                <column name="Model" dataType="Integer" validationType="Datasheet" formula1="PypmcaModels" allowDbNull="False" displayname="Model"/>
+                <column name="FileName" dataType="String" displayName="Crosswalk File (Optional)" isExternalFile="True"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
         <datafeed name="ParameterValues" displayName="Parameter Values" dataScope="Scenario">
           <datasheets>
             <datasheet name="ParameterValues" displayname="Parameter Values">
               <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
+                <column name="ParameterValuesID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="Model" dataType="String" isVisible="False"/>
                 <column name="Name" dataType="String" displayName="Parameter Name"/>
                 <column name="Description" dataType="String" displayName="Description"/>
                 <column name="Initial" dataType="Double" displayName="Initial Value"/>
@@ -127,62 +148,13 @@
             </datasheet>
           </datasheets>
         </datafeed>
-        <datafeed name="ModelFile" displayName="Downloaded Model" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="ModelFile" displayName="Downloaded Model" isSingeRow="True">
-              <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Region" dataType="String" displayName="Region"/>
-                <column name="Name" dataType="String" displayName="Name"/>
-                <column name="URL" dataType="String" displayName="URL"/>
-                <column name="PypmFile" displayName="Object File" dataType="String" isExternalFile="True"/>
-                <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
-              </columns>
-              <validations>
-                <validation validationType="Unique" columns="Region|Name|URL|PypmFile"/>
-              </validations>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="PopulationSelectionTable" displayName="Population Selection" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="PopulationSelectionTable" displayName="Population Selection">
-              <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Show" dataType="Boolean" displayName="Show (Yes/No)"/>
-                <column name="Standard" dataType="String" displayName="Population Name"/>
-                <column name="Description" dataType="String"/>
-                <column name="Stock" dataType="String"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="ModelChoices" displayName="Model Options" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="ModelChoices" displayName="Model Options">
-              <columns>
-                <column name="InputID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer"/>
-                <column name="Location" dataType="Integer" validationType="Datasheet" formula1="PypmcaJuris" allowDbNull="False" displayname="Model:"/>
-                <column name="FileName" dataType="String" displayName="Crosswalk File:" isExternalFile="True"/>
-              </columns>
-              <defaultRecords>
-                <record columns="FileName" values="C:\Users\User\Documents\GitHub\modelKarlenPypm\StockToStandard.csv"/>
-              </defaultRecords>
-            </datasheet>
-          </datasheets>
-        </datafeed>
       </datafeeds>
       <pipeline>
         <datafeed name="ParameterValues"/>
-        <datafeed name="ModelFile"/>
-        <datafeed name="PopulationSelectionTable"/>
         <datafeed name="ModelChoices"/>
       </pipeline>
-    </transformer>
-    <transformer
+    </transformer> -->
+    <!-- <transformer
       name="getData"
       displayName="modelKarlenPypm_C_getData"
       programName="spyder"
@@ -222,8 +194,8 @@
         <datafeed name="epi_DataSummary"/>
         <datafeed name="DataFileOut"/>
       </pipeline>
-    </transformer>
-    <transformer
+    </transformer> -->
+    <!-- <transformer
       name="runIterations"
       displayName="modelKarlenPypm_D_runIterations"
       programName="spyder"
@@ -272,21 +244,61 @@
         <datafeed name="ModelChoices"/>
         <datafeed name="epi_DataSummary"/>
       </pipeline>
-    </transformer>
+    </transformer> -->
   </transformers>
   <layouts>
+    <layout name="coreforms_ProjectDatafeeds">
+      <group name="Pypmca" insertAfter="epi_Jurisdiction">
+        <item name="PypmcaCrosswalk"/>
+        <item name="PypmcaModels"/>
+        <ite name="PypmcaData"/>
+      </group>
+    </layout>
     <layout name="coreforms_ScenarioDatafeeds">
-      <group name="Pypmca" displayName="Pypmca" appendTo="epi_Models">
+      <group name="PypmcaSources" displayName="Pypmca Sources" appendTo="epi_Sources">
+        <item name="CrosswalkFile" itemTransformer="getRepos" showIf="isResult"/>
+      </group>
+      <group name="PypmcaModels" dysplayName="Pypmca" appendTo="epi_Models">
+        <item name="ParameterValues" itemTransformer="getRepos" showIf="isEither"/>
+        <!-- <item name="ModelChoices" itemTransformer="getParameters" showIf="isParent"/> -->
+      </group>
+    </layout>
+
+      <!-- <group name="Pypmca" displayName="Pypmca" appendTo="epi_Models">
         <group name="Repos" displayName="Repositories" appendTo="Pypmca">
-          <item name="ModelsAvailable" itemTransformer="getRepos" showIf="isResult"/>
           <item name="DataAvailable" itemTransformer="getRepos" showIf="isResult"/>
           <item name="CrosswalkFile" itemTransformer="getRepos" showIf="isResult"/>
         </group>
+        <datafeed name="PopulationSelectionTable" displayName="Population Selection" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="PopulationSelectionTable" displayName="Population Selection" isSingleRow="True">
+              <columns>
+                <column name="InputID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="ShowThese" dataType="Integer" validationType="Datasheet" formula1="PypmcaCrosswalk" displayName="Populations to be Shown" allowDbNull="False"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+        <datafeed name="ModelFile" displayName="Downloaded Model" dataScope="Scenario">
+          <datasheets>
+            <datasheet name="ModelFile" displayName="Downloaded Model" isSingeRow="True">
+              <columns>
+                <column name="InputID" dataType="Integer" isPrimary="True"/>
+                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
+                <column name="Region" dataType="String" displayName="Region"/>
+                <column name="Name" dataType="String" displayName="Name"/>
+                <column name="URL" dataType="String" displayName="URL"/>
+                <column name="PypmFile" displayName="Object File" dataType="String" isExternalFile="True"/>
+                <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
+              </columns>
+              <validations>
+                <validation validationType="Unique" columns="Region|Name|URL|PypmFile"/>
+              </validations>
+            </datasheet>
+          </datasheets>
+        </datafeed>
         <group name="Params" displayName="Parameter Choice" appendTo="Pypmca">
-          <item name="ModelChoices" itemTransformer="getParameters" showIf="isParent"/>
-          <item name="ParameterValues" itemTransformer="getParameters" showIf="isResult"/>
-          <item name="ModelFile" itemTransformer="getParameters" showIf="isResult"/>
-          <item name="PopulationSelectionTable" itemTransformer="getParameters" showIf="isResult"/>
         </group>
         <group name="Data" displayName="COVID-19 Case Data" appendTo="Pypmca">
           <item name="DataChoices" itemTransformer="getData" showIf="isParent"/>
@@ -317,9 +329,17 @@
             filterTransformer="runIterations"
             itemTransformer="runIterations"/>
         </group>
-      </group>
-    </layout>
+      </group> -->
+    <!-- </layout> -->
   </layouts>
+	<views>
+		<view
+			name="ParameterValuesDataFeedView"
+			target="ParameterValues"
+			className="SyncroSim.Core.Forms.FilteredDataFeedView"
+			classAssembly="SyncroSim.Core.Forms"/>
+	</views>
+
 </package>
 
 <!-- <group name="Inputs" displayName="Inputs" appendTo="KarlenModel">
