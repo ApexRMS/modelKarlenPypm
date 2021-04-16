@@ -14,15 +14,6 @@ from syncro import *
 from headerFile import *
 
 
-# https://stackoverflow.com/questions/4983258/python-how-to-check-list-monotonicity/4983359
-# Answer by user: 6502
-def non_increasing(L):
-    return all(x>=y for x, y in zip(L, L[1:]))
-def non_decreasing(L):
-    return all(x<=y for x, y in zip(L, L[1:]))
-def monotonic(L):
-    return non_increasing(L) or non_decreasing(L)
-
 env = ssimEnvironment()
 myScenario = scenario()
 
