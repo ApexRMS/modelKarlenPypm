@@ -122,7 +122,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
     if datasheetName not in list(currentDatasheets.Name):
         print("ERROR: no table by that name")
         return None
-    elif dataSheet.shape[0] == 0:
+    elif dataSheet.empty:
         print("ERROR: empty data sheet")
         return None
 
