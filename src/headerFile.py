@@ -8,8 +8,27 @@ import sys
 
 from syncro import *
 
+# https://stackoverflow.com/questions/4983258/python-how-to-check-list-monotonicity/4983359
+# Answer by user: 6502
+def non_increasing(L):
+    return all(x>=y for x, y in zip(L, L[1:]))
+def non_decreasing(L):
+    return all(x<=y for x, y in zip(L, L[1:]))
+def monotonic(L):
+    return non_increasing(L) or non_decreasing(L)
+
+
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+def dataFrameDifference(DF1:pandas.DataFrame, DF2:pandas.DataFrame, colName:str=None):
+
+    if colName == None:
+        return pandas.concat([DF1, DF2]).drop_duplicates(keep=False)
+    elif (colName not in DF1.columns) or (colName not in DF2.columns):
+        return pandas.concat([DF1, DF2]).drop_duplicates(keep=False)
+    else:
+        return pandas.concat([DF1, DF2]).drop_duplicates(subset=[colName], keep=False)
 
 ''' functions to turn the integers from the XML into strings and vice verse (due to the validation) '''
 
@@ -17,46 +36,43 @@ def standardPopName(pop:pypmca.Population):
 
     varName = getFancyName(pop.name)
 
-    if 'daily' in varName.lower():
-        return '{} - Daily'.format( varName.replace('daily', '').strip().title() )
-
-    if 'cumulative' in varName.lower():
-        return '{} - Cumulative'.format( varName.replace('cumulative', '').strip().title() )
+    if re.findall('total|daily|cumulative', varName.lower()):
+        return varName
 
     standardName = '{} - {}'.format(
         varName,
-        'Cumulative' if pandas.Series(pop.history).is_monotonic_increasing else 'Daily'
+        'Cumulative' if monotonic(pop.history) else 'Daily'
     )
-
     return standardName
 
 def getFancyName(varName:str):
 
-    interval = ''
-
-    if 'daily' in varName:
-        interval = 'daily'
-        varName = varName.replace('daily', '').replace('-', '').strip()
-    elif 'total' in varName:
-        interval = 'cumulative'
-        varName = varName.replace('total', '').replace('-', '').strip()
+    if varName.lower() == 'total':
+        return 'Total'
 
     varName = varName.replace('_', ' ').lower()
+
+    interval = ''
+
+    if re.findall(r'daily', varName) != []:
+        interval = 'daily'
+        varName = re.sub('daily|-', '', varName).strip()
+    elif re.findall(r'total|cumulative|sum', varName) != []:
+        interval = 'cumulative'
+        varName = re.sub('total|cumulative|sum|-', '', varName).strip()
+
     varName = varName.replace('non ', 'Non ')
     varName = varName.replace(' rel', ' Released')
     varName = varName.replace('vacc ', 'Vaccination ')
     varName = varName.replace(' cand', ' Candidates')
     varName = varName.replace('sus ', 'Susceptible ')
     varName = varName.replace('rec ', 'Recovered ')
-
-    varName = varName.replace('deaths', 'mortality')
+    varName = varName.replace('mortality', 'deaths')
     varName = varName.replace('reported', 'cases')
 
     if varName[-2:] == ' v':
         varName = varName.replace(' v', ' (Variants)')
-
     varName = varName.title().replace('Icu', 'ICU')
-
     if interval != '':
         varName = '{} - {}'.format(varName, interval.title())
 
@@ -167,8 +183,13 @@ def ageRange(modelName:str):
 
 def modelVersion(modelName):
 
-    if 'reference' in modelName:
-        return None
+    if 'ref' in modelName:
+        theDigits = [x for x in modelName.replace('.pypm', '').split('_') if x.isdigit()]
+        if len(theDigits) == 1:
+            return '{}.0'.format(theDigits[0])
+        else:
+            return '.'.join(theDigits)
+
     modelName = modelName.replace('.pypm', '').replace('_d', '')
     first, sec = modelName.split('_')[1:3]
     return '{}.{}'.format(first, sec)
