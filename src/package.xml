@@ -1,312 +1,316 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="modelKarlenPypm" displayName="Add-On to the Epidemic Package for the Karlen model" isAddOn="True" extendsPackage="epi" version="1.0.0">
-  <transformers>
-    <transformer
-      name="getRepos"
-      isPrimary="True"
-      displayName="modelKarlenPypm_A_getRepos"
-      programName="spyder"
-      programArguments="getRepos.py"
-      isRunnable ="True">
-      <datafeeds>
-        <datafeed name="CrosswalkFile" displayName="Crosswalk File" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="CrosswalkFile" displayName="Crosswalk File" isSingeRow="True">
-              <columns>
-                <column name="CrosswalkFileID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="File" displayName="File" dataType="String" isExternalFile="True"/>
-                <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="PypmcaCrosswalk" dataScope="Project">
-          <datasheets>
-            <datasheet name="PypmcaCrosswalk" valueMember="PypmcaCrosswalkID" displayMember="Standard">
-              <columns>
-                <column name="PypmcaCrosswalkID" dataType="Integer" isPrimary="True"/>
-                <column name="ProjectID" dataType="Integer" isOptional="True"/>
-                <column name="Stock" dataType="String" displayName="Model Variable Name"/>
-                <column name="Standard" dataType="String" displayName="epi_Variable Name"/>
-                <column name="Description" dataType="String"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="PypmcaData" dataScope="Project">
-          <datasheets>
-            <datasheet name="PypmcaData" valueMember="PypmcaDataID" displayMember="Name">
-              <columns>
-                <column name="PypmcaDataID" dataType="Integer" isPrimary="True"/>
-                <column name="ProjectID" dataType="Integer"/>
-                <column name="Name" dataType="String"/>
-                <column name="Country" dataType="String"/>
-                <column name="Region" dataType="String"/>
-                <column name="AgeStructure" dataType="Boolean" displayName="Age Structure"/>
-                <column name="URL" dataType="String" isVisible="False"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="PypmcaModels" dataScope="Project">
-          <datasheets>
-            <datasheet name="PypmcaModels" valueMember="PypmcaModelsID" displayMember="LUT">
-              <columns>
-                <column name="PypmcaModelsID" dataType="Integer" isPrimary="True"/>
-                <column name="ProjectID" dataType="Integer" isOptional="True"/>
-                <column name="LUT" dataType="String" displayName="Name"/>
-                <column name="Country" dataType="String"/>
-                <column name="Region" dataType="String"/>
-                <column name="Version" dataType="String"/>
-                <column name="AgeRange" dataType="String" displayName="Age Range"/>
-                <column name="Date" dataType="String"/>
-                <column name="Code" dataType="String" isVisible="False"/>
-                <column name="FileName" dataType="String" isVisible="False"/>
-                <column name="URL" dataType="String" isVisible="False"/>
-                <column name="Jurisdiction" dataType="String" isVisible="False"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="ParameterValues" displayName="Parameter Values" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="ParameterValues" displayname="Parameter Values" viewFilterColumn="Model">
-              <columns>
-                <column name="ParameterValuesID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="Model" dataType="Integer" validationType="Datasheet" formula1="PypmcaModels" allowDbNull="False" isCompositeIndex="True" isVisible="False"/>
-                <column name="Name" dataType="String" displayName="Parameter Name"/>
-                <column name="Description" dataType="String" displayName="Description"/>
-                <column name="InitialValue" dataType="Double" displayName="Initial Value"/>
-                <column name="ParameterMin" dataType="Double" displayName="Minimum Value"/>
-                <column name="ParameterMax" dataType="Double" displayName="Maximum Value"/>
-                <column name="Status" dataType="Integer" validationType="List" formula1="1:fixed|2:variable" displayName="Fixed/Variable"/>
-                <column name="PriorFunction" dataType="Integer" displayName="Prior Distribution" validationType="List" formula1="1:uniform|2:norm|3:"/>
-                <column name="PriorMean" dataType="Double" displayName="Prior Mean"/>
-                <column name="PriorSecond" dataType="Double" validationType="Decimal" validationCondition="GreaterEqual" formula1="0.0" displayName="Prior SD/Half-width"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-      </datafeeds>
-      <pipeline>
-        <datafeed name="CrosswalkFile"/>
-        <datafeed name="PypmcaCrosswalk"/>
-        <datafeed name="PypmcaData"/>
-        <datafeed name="PypmcaModels"/>
-        <datafeed name="ParameterValues"/>
-      </pipeline>
-      <include>
-        <transformer name="runIterations"/>
-        <transformer name="getExpectations"/>
-        <transformer name="getData"/>
-      </include>
-    </transformer>
-    <transformer
-      name="getExpectations"
-      displayName="modelKarlenPypm_B_getExpectations"
-      programName="spyder"
-      programArguments="getExpectations.py"
-      isRunnable ="True">
-      <datafeeds>
-        <datafeed name="ModelChoices" displayName="Model Options" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="ModelChoices" displayName="Model Options" isSingleRow="True">
-              <columns>
-                <column name="ModelChoicesID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer"/>
-                <column name="ModelName" dataType="Integer" validationType="Datasheet" formula1="PypmcaModels" allowDbNull="False" displayname="Model"/>
-                <column name="CrosswalkFile" dataType="String" displayName="Crosswalk File (Optional)" isExternalFile="True"/>
-                <column name="StartFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Day To Start Fitting:"/>
-                <column name="EndFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Day To End Fitting:"/>
-                <column name="CumulReset" dataType="Boolean" displayName="Reset Cumulative to Zero:"/>
-                <column name="SkipDatesText" dataType="String" displayName="Days to Skip:"/>
-                <column name="EndDate" dataType="Date" displayName="End of Projection"/>
-                <column name="FitVariable"
-                  dataType="Integer"
-                  validationType="List"
-                  formula1="1:Cases - Cumulative|
-                            2:Infected - Cumulative|
-                            3:Cases - Daily|
-                            4:Infected - Daily"
-                  displayName="Variable To Fit:"/>
-              </columns>
-              <defaultRecords>
-                <record columns="FitVariable|StartFit|SkipDatesText" values="1|37|147,45:47"/>
-              </defaultRecords>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="PopulationSelectionTable" displayName="Population Selection" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="PopulationSelectionTable" displayName="Population Selection">
-              <columns>
-                <column name="PopulationSelectionID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="ShowThese" dataType="Integer" validationType="Datasheet" formula1="PypmcaCrosswalk" allowDbNull="False"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="FitVariables" displayName="Fit Variables" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="FitVariables" displayName="Fit Variables">
-              <columns>
-                <column name="InputsID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer"/>
-                <column name="Variable" dataType="String"/>
-                <column name="Value" dataType="Double"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-        <datafeed name="FittedModelFile" displayName="Fitted Model File" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="FittedModelFile" displayName="Fitted Model FIle" isSingeRow="True">
-              <columns>
-                <column name="FittedModelFileID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer" isOptional="True"/>
-                <column name="File" dataType="String"/>
-                <column name="DateTime" dataType="String" displayName="Download Date/Time"/>
-                <column name="ModelDescrip" dataType="String" displayName="Model Jurisdiction"/>
-                <column name="Crosswalk" dataType="String" displayName="CrosswalkFile"/>
-              </columns>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-      </datafeeds>
-      <pipeline>
-        <datafeed name="ModelChoices"/>
-        <datafeed name="PopulationSelectionTable"/>
-        <datafeed name="epi_DataSummary"/>
-        <datafeed name="PypmcaCrosswalk"/>
-        <datafeed name="PypmcaModels"/>
-        <datafeed name="ParameterValues"/>
-        <datafeed name="FitVariables"/>
-        <datafeed name="FittedModelFile"/>
-      </pipeline>
-    </transformer>
-    <transformer
-      name="runIterations"
-      displayName="modelKarlenPypm_C_runIterations"
-      programName="spyder"
-      programArguments="runIterations.py"
-      isRunnable ="True">
-      <datafeeds>
-        <datafeed name="RunControl" displayName="Run Control" dataScope="Scenario">
-          <datasheets>
-            <datasheet name="RunControl" displayName="Run Control" isSingleRow="True">
-              <columns>
-                <column name="RunControlID" dataType="Integer" isPrimary="True"/>
-                <column name="ScenarioID" dataType="Integer"/>
-                <column name="EndDate" dataType="Date" displayName="End of Projection"/>
-                <column name="Iterations" dataType="Integer"/>
-              </columns>
-              <defaultRecords>
-                <record columns="Iterations" values="20"/>
-              </defaultRecords>
-            </datasheet>
-          </datasheets>
-        </datafeed>
-      </datafeeds>
-      <pipeline>
-        <datafeed name="FittedModelFile"/>
-        <datafeed name="PopulationSelectionTable"/>
-        <datafeed name="epi_DataSummary"/>
-        <datafeed name="PypmcaCrosswalk"/>
-        <datafeed name="RunControl"/>
-      </pipeline>
-    </transformer>
-    <transformer
-    	name="getData"
-    	displayName="modelKarlenPypm_D_getData"
-    	programName="spyder"
-    	programArguments="getData.py"
-    	isRunnable ="True">
-    	<datafeeds>
-    		<datafeed name="DataChoices" displayName="Regions" dataScope="Scenario">
-    			<datasheets>
-    				<datasheet name="DataChoices" displayName="Regions">
-    					<columns>
-    						<column name="InputID" dataType="Integer" isPrimary="True"/>
-    						<column name="ScenarioID" dataType="Integer"/>
-    						<column name="DataSet" dataType="Integer" validationType="Datasheet" formula1="PypmcaData" allowDbNull="False" displayName="Data Set:"/>
-    						<column name="Regional" dataType="Boolean" displayName="Health Regions:"/>
-    					</columns>
-    				</datasheet>
-    			</datasheets>
-    		</datafeed>
-    		<datafeed name="DataFileOut" displayName="Data File" dataScope="Scenario">
-    			<datasheets>
-    				<datasheet name="DataFileOut" displayName="Data File" isSingeRow="True">
-    					<columns>
-    						<column name="InputID" dataType="Integer" isPrimary="True"/>
-    						<column name="ScenarioID" dataType="Integer" isOptional="True"/>
-    						<column name="File" displayName="File" dataType="String" isExternalFile="True"/>
-    						<column name="DateTime" dataType="String" displayName="Download Date/Time"/>
-    					</columns>
-    				</datasheet>
-    			</datasheets>
-    		</datafeed>
-    	</datafeeds>
-    	<pipeline>
-    		<datafeed name="DataChoices"/>
-    		<datafeed name="epi_DataSummary"/>
-    		<datafeed name="DataFileOut"/>
-    	</pipeline>
-    </transformer>
-  </transformers>
-  <layouts>
-    <layout name="coreforms_ProjectDatafeeds">
-      <group name="Pypmca" insertAfter="epi_Jurisdiction">
-        <item name="PypmcaCrosswalk"/>
-        <item name="PypmcaModels"/>
-        <item name="PypmcaData"/>
-      </group>
-    </layout>
-    <layout name="coreforms_ScenarioDatafeeds">
-      <group name="PypmcaSources" displayName="Pypmca Sources" appendTo="epi_Sources">
-        <item name="CrosswalkFile" itemTransformer="getRepos" showIf="isResult"/>
-        <item name="ParameterValues" itemTransformer="getRepos" showif="isResult"/>
-      </group>
-      <group name="PypmcaModels" displayName="Pypmca" appendTo="epi_Models">
-        <group name="Expectations" appendTo="PypmcaModels">
-          <item name="ModelChoices" filterTransformer="getExpectations" itemTransformer="getExpectations" showIf="isEither"/>
-          <item name="PopulationSelectionTable" filterTransformer="getExpectations" itemTransformer="getExpectations" showIf="isEither"/>
-          <item name="ParameterValues" filterTransformer="getExpectations" itemTransformer="getExpectations" showIf="isEither"/>
-          <item name="FitVariables" filterTransformer="getExpectations" itemTransformer="getExpectations" showIf="isResult"/>
-          <item name="FittedModelFile" filterTransformer="runIterations" itemTransformer="getExpectations" showIf="isResult"/>
-          <item
-            name="epi_DataSummary"
-            displayName="Expectations"
-            showIf="isResult"
-            viewClassName="SyncroSim.Core.Forms.MultiRowDataFeedView"
-            viewClassAssembly="SyncroSim.Core.Forms"
-            filterTransformer="getExpectations"
-            itemTransformer="getExpectations"/>
-        </group>
-        <group name="Simulations" appendTo="PypmcaModels">
-          <item name="PopulationSelectionTable" filterTransformer="runIterations" itemTransformer="runIterations" showIf="isEither"/>
-          <item name="FittedModelFile" filterTransformer="runIterations" itemTransformer="runIterations" showIf="isParent"/>
-          <item name="RunControl" filterTransformer="runIterations" itemTransformer="runIterations" showIf="isParent"/>
-          <item
-            name="epi_DataSummary"
-            displayName="Simulations"
-            showIf="isResult"
-            viewClassName="SyncroSim.Core.Forms.MultiRowDataFeedView"
-            viewClassAssembly="SyncroSim.Core.Forms"
-            filterTransformer="runIterations"
-            itemTransformer="runIterations"/>
-        </group>
-      </group>
-    </layout>
-  </layouts>
-	<views>
-		<view
-			name="ParameterValuesDataFeedView"
-			target="ParameterValues"
-			className="SyncroSim.Core.Forms.FilteredDataFeedView"
-			classAssembly="SyncroSim.Core.Forms"/>
-	</views>
+<package name="modelCovidseir" displayName="Run covidseir model" isAddOn="True" extendsPackage="epi" version="1.0.0">
+	<transformers>
+		<transformer
+			name="PrepareDelay"
+			isPrimary="True"
+			displayName="covidseir model: Download and fit delay data"
+			programName="Rscript"
+			programArguments="prepare_delay.R"
+			isRunnable="True">
+			<datafeeds>
+				<datafeed name="DelayInputs" displayName="Reporting Delay - Inputs" dataScope="Scenario">
+					<datasheets>
+						<datasheet name="DelayInputs" displayName="Reporting Delay - Inputs" isSingleRow="True">
+							<columns>
+								<column name="DelayInputsID" dataType="Integer" isPrimary="True"/>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="delayURL" dataType="String" displayName="Reporting delay data URL"/>
+							</columns>
+							<defaultRecords>
+								<record columns="delayURL" values="https://github.com/andrew-edwards/rightTruncation/raw/master/data/delay_data_2021_01_05.rda"/>
+							</defaultRecords>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="DelayOutputs" displayName="Reporting Delay - Raw Outputs" dataScope="Scenario" isOutput="True">
+					<datasheets>
+						<datasheet name="DelayOutputs" displayName="Reporting Delay - Raw Outputs" isSingleRow="True">
+							<columns>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="DelayDataFile" displayName="Reporting delay data filename" dataType="String" isExternalFile="True"/>
+								<column name="DelayDownloadDateTime" displayName="Reporting delay download date/time" dataType="Date"/>
+								<column name="WeibullDataFile" displayName="Weibull distribution parameters" dataType="String" isExternalFile="True"/>
+							</columns>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="DelayData" displayName="Reporting Delay - Individual Data" dataScope="Scenario" isOutput="True">
+					<datasheets>
+						<datasheet name="DelayData" displayName="Reporting Delay - Individual Data">
+						  <columns>
+							<column name="ScenarioID" dataType="Integer"/>
+							<column name="DateReported" dataType="String" displayName="Date of Case Report"/>
+							<column name="DateSymptom" dataType="String" displayName="Date of Symptom Onset"/>
+							<column name="ReportingGap" dataType="Integer" displayName="Reporting Delay (days)"/>
+						  </columns>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="DelayWeibull" displayName="Reporting Delay - Weibull Distribution" dataScope="Scenario" isOutput="True">
+					<datasheets>
+						<datasheet name="DelayWeibull" displayName="Reporting Delay - Weibull Distribution" isSingleRow="True">
+							<columns>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="MleShape" dataType="Double" displayName="Shape parameter"/>
+								<column name="MleScale" dataType="Double" displayName="Scale parameter"/>
+							</columns>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+			</datafeeds>
+			<pipeline>
+				<datafeed name="DelayInputs"/>
+				<datafeed name="DelayOutputs"/>
+				<datafeed name="DelayData"/>
+				<datafeed name="DelayWeibull"/>
+			</pipeline>
+			<include>
+				<transformer name="modelCovidseir_Fit"/>
+				<transformer name="modelCovidseir_Project"/>
+			</include>
+		</transformer>
+		<transformer
+			name="Fit"
+			displayName="covidseir model: Fit"
+			programName="Rscript"
+			programArguments="fit.R"
+			isRunnable ="True">
+			<datafeeds>
+				<datafeed name="FitRunSettings" displayName="covidseir Model - Fit Run Settings" dataScope="Scenario">
+				  <datasheets>
+					<datasheet name="FitRunSettings" displayName="covidseir Model - Fit Run Settings" isSingleRow="True">
+					  <columns>
+						<column name="FitRunSettingsID" dataType="Integer" isPrimary="True"/>
+						<column name="ScenarioID" displayName="Scenario" dataType="Integer"/>
+						<column name="MinimumIteration" dataType="Integer" isVisible="False" defaultValue="1" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="1" format="d"/>
+						<column name="MaximumIteration" dataType="Integer" displayName="Iterations" defaultValue="1" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="1" format="d"/>
+					  </columns>
+					</datasheet>
+				  </datasheets>
+				</datafeed>
+				<datafeed name="FitRunJurisdictions" displayName="covidseir Model - Jurisdictions" dataScope="Scenario">
+				  <datasheets>
+					<datasheet name="FitRunJurisdictions" displayName="covidseir Model - Jurisdictions">
+					  <columns>
+						<column name="FitRunJurisdictionsID" dataType="Integer" isPrimary="True"/>
+						<column name="ScenarioID" dataType="Integer"/>
+						<column name="Jurisdictions" dataType="Integer" validationType="Datasheet" formula1="epi_Jurisdiction" allowDbNull="False"/>
+					  </columns>
+					  <validations>
+						<validation validationType="Unique" columns="Jurisdictions"/>
+					  </validations>
+					</datasheet>
+				  </datasheets>
+				</datafeed>
+				<datafeed name="ContactRateFractions" displayName="Contact Rate Fractions" dataScope="Scenario">
+					<datasheets>
+						<datasheet name="ContactRateFractions" displayname="Contact Rate Fractions">
+							<columns>
+								<column name="ContactRateFractionsID" dataType="Integer" isPrimary="True"/>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="BreakDay" dataType="Date" displayName="Breakpoint Date"/>
+								<column name="PriorMean" dataType="Double" displayName="Prior Mean"/>
+								<column name="PriorSD" dataType="Double" displayName="Prior SD"/>
+							</columns>
+							<defaultRecords>
+								<record columns="BreakDay|PriorMean|PriorSD" values="2020-01-01|0.4|0.2"/>
+								<record columns="BreakDay|PriorMean|PriorSD" values="2020-10-01|0.95|0.2"/>
+								<record columns="BreakDay|PriorMean|PriorSD" values="2020-11-13|0.6|0.2"/>
+								<record columns="BreakDay|PriorMean|PriorSD" values="2021-02-15|0.6|0.2"/>
+							</defaultRecords>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="SamplingFractions" displayName="Sampling Fractions" dataScope="Scenario">
+					<datasheets>
+						<datasheet name="SamplingFractions" displayName="Sampling Fractions">
+							<columns>
+								<column name="SamplingFractionsID" dataType="Integer" isPrimary="True"/>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="Day" dataType="Integer" displayName="Day"/>
+								<column name="Proportion" dataType="Double" displayName="Proportion [samp_frac_fixed]"/>
+							</columns>
+							<defaultRecords>
+								<record columns="Day|Proportion" values="0|0.14"/>
+								<record columns="Day|Proportion" values="14|0.21"/>
+								<record columns="Day|Proportion" values="52|0.37"/>
+							</defaultRecords>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="General" displayName="General" dataScope="Scenario">
+					<datasheets>
+						<datasheet name="General" displayName="General" isSingleRow="True">
+							<columns>
+								<column name="GeneralID" dataType="Integer" isPrimary="True"/>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="NPop" dataType="Integer" displayName="Population Size [N_pop]"/>
+								<column name="I0PriorMean" dataType="Double" displayName="Initial Infected - Prior Mean [i0_prior mean]"/>
+								<column name="I0PriorSD" dataType="Double" displayName="Initial Infected - Prior SD [i0_prior SD]"/>
+								<column name="R0PriorMean" dataType="Double" displayName="R0 - Prior Mean [R0_prior mean]"/>
+								<column name="R0PriorSD" dataType="Double" displayName="R0 - Prior SD [R0_prior SD]"/>
+								<column name="EPriorMean" dataType="Double" displayName="Social Distancing Fraction - Prior Mean [e_prior mean]"/>
+								<column name="EPriorSD" dataType="Double" displayName="Social Distancing Fraction - Prior SD [e_prior SD]"/>
+								<column name="FitType" dataType="Integer" displayName="Fit Type [fit_type]" validationType="List" formula1="1:NUTS | 2:VB | 3:optimising"/>
+								<column name="YAML" dataType="String" displayName="Advanced Settings YAML Filename" isExternalFile="True"/>
+								<column name="RDS" dataType="String" displayName="Fit Results RDS Filename"/>
+							</columns>
+							<defaultRecords>
+								<record columns="NPop|I0PriorMean|I0PriorSD|R0PriorMean|R0PriorSD|EPriorMean|EPriorSD|FitType|RDS" values="5071000|10|1|2.6|0.2|0.8|0.05|3|modelCovidseir_fit"/>
+							</defaultRecords>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="PostsGeneral" displayName="Posteriors - General" dataScope="Scenario" isOutput="True">
+					<datasheets>
+						<datasheet name="PostsGeneral" displayName="Posteriors">
+							<columns>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="Iteration" dataType="Integer" displayName="Iteration"/>
+								<column name="I0Post" dataType="Double" displayName="Initial Infected"/>
+								<column name="R0Post" dataType="Double" displayName="R0"/>
+								<column name="EPost" dataType="Double" displayName="Social Distancing Fraction"/>
+								<column name="StartDeclinePost" dataType="Double" displayName="Start Decline Day"/>
+								<column name="EndDeclinePost" dataType="Double" displayName="End Decline Day"/>
+								<column name="PhiPost" dataType="Double" displayName="Dispersion Parameter"/>
+							</columns>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="PostsContactRates" displayName="Posteriors - Contact Rate Fractions" dataScope="Scenario" isOutput="True">
+					<datasheets>
+						<datasheet name="PostsContactRates" displayName="Posteriors - Contact Rate Frantions">
+							<columns>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="Iteration" dataType="Integer" displayName="Iteration"/>
+								<column name="Segment" dataType="Integer" displayName="Segment"/>
+								<column name="Day" dataType="Date" displayName="Timestep"/>
+								<column name="Posterior" dataType="Double" displayName="Posterior"/>
+							</columns>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="FitFileInfo" displayName="Fit Data RDS" dataScope="Scenario" isOutput="True">
+					<datasheets>
+						<datasheet name="FitFileInfo" displayName="Fit File Data" isSingleRow="True">
+							<columns>
+								<column name="InputDatasheetID" dataType="Integer" isPrimary="True"/>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="FitDataFile" displayName="Fit Information Object File" dataType="String" isExternalFile="True"/>
+								<column name="MadeDateTime" displayName="Download Date/Time" dataType="Date"/>
+							</columns>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+			</datafeeds>
+			<pipeline>
+				<datafeed name="FitRunSettings"/>
+				<datafeed name="FitRunJurisdictions"/>
+				<datafeed name="DelayWeibull"/>
+				<datafeed name="ContactRateFractions"/>
+				<datafeed name="SamplingFractions"/>
+				<datafeed name="General"/>
+				<datafeed name="PostsGeneral"/>
+				<datafeed name="PostsContactRates"/>
+				<datafeed name="FitFileInfo"/>
+				<datafeed name="epi_DataSummary"/>
+			</pipeline>
+		</transformer>
+		<transformer
+			name="Project"
+			displayName="covidseir model: Project"
+			programName="Rscript"
+			programArguments="project.R"
+			isRunnable ="True">
+			<datafeeds>
+				<datafeed name="ProjParams" displayName="Parameters" dataScope="Scenario" isInput="True">
+					<datasheets>
+						<datasheet name="ProjParams" displayName="Parameters" isSingleRow="True">
+							<columns>
+								<column name="ProjParamsID" dataType="Integer" isPrimary="True"/>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="StartChange" dataType="Integer" displayName="Day of Social Distancing Change [f_fixed_start]"/>
+								<column name="Resampling" dataType="Integer" displayName="Number Of Samples For Smoothing [resample_y_rep]"/>
+								<column name="Multiplic" dataType="Double" displayName="Per-Day Multiplying Factor For Projection Contact Rates"/>
+								<column name="FSegment" dataType="Integer" displayName="Social Distancing Segment Number [f_multi_seg]"/>
+								<column name="Imports" dataType="Integer" displayName="Number of Imported Cases [imported_cases]"/>
+								<column name="ImportWindow" dataType="Integer" displayName="Number of Days Over Which Case Imports Are Distributed [imported_window]"/>
+								<column name="Parallel" dataType="Integer" displayName="Parallel Processing [parallel]" validationType="List" formula1="1:Yes|0:No"/>
+							</columns>
+							<defaultRecords>
+								<record columns="StartChange|FSegment|Resampling|Parallel|Multiplic|Imports|ImportWindow" values="5|1|30|1|1.1|0|1"/>
+							</defaultRecords>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+				<datafeed name="ProjFileInfo" displayName="Projection Data File" dataScope="Scenario" isOutput="True">
+					<datasheets>
+						<datasheet name="ProjFileInfo" displayName="Projection Data File" isSingleRow="True">
+							<columns>
+								<column name="ScenarioID" dataType="Integer"/>
+								<column name="ProjDataFile" displayName="Projection Results File" dataType="String" isExternalFile="True"/>
+								<column name="MadeDateTime" displayName="Download Date/Time" dataType="Date"/>
+							</columns>
+						</datasheet>
+					</datasheets>
+				</datafeed>
+			</datafeeds>
+			<pipeline>
+				<datafeed name="PostsGeneral"/>
+				<datafeed name="PostsContactRates"/>
+				<datafeed name="ProjParams"/>
+				<datafeed name="ProjFileInfo"/>
+				<datafeed name="epi_DataSummary"/>
+				<datafeed name="General"/>
+			</pipeline>
+		</transformer>
+	</transformers>
+	<layouts>
+		<layout name="coreforms_ScenarioDatafeeds">
+			<group name="DelayData" displayName="BC Reporting Delay Data" appendTo="epi_Sources">
+				<item name="DelayInputs" displayName="Inputs" itemTransformer="PrepareDelay" showIf="isEither"/>
+				<group name="Outputs" displayName="Outputs">
+					<item name="DelayOutputs" displayName="Raw Outputs" itemTransformer="PrepareDelay" showIf="isResult"/>
+					<item name="DelayData" displayName="Individual Delay Data" itemTransformer="PrepareDelay" showIf="isResult"/>
+					<item name="DelayWeibull" displayName="Weibull Distribution" itemTransformer="PrepareDelay" showIf="isResult"/>
+				</group>
+			</group>
+			<group name="Covidseir" displayName="covidseir Model" appendTo="epi_Models">
+				<group name="FitModel" displayName="Fit Model">
+					<group name="FitInputs" displayName="Inputs">
+						<item name="FitRunSettings" displayName="Run Settings" itemTransformer="Fit" showIf="isEither"/>
+						<item name="FitRunJurisdictions" displayName= "Jurisdictions" itemTransformer="Fit" showIf="isEither"/>
+						<item name="General" itemTransformer="Fit" showIf="isEither"/>
+						<item name="SamplingFractions" itemTransformer="Fit" showIf="isEither"/>
+						<item name="ContactRateFractions" itemTransformer="Fit" showIf="isEither"/>
+						<item name="DelayWeibull" displayName="Weibull Distribution" itemTransformer="Fit" showIf="isEither"/>
+						<item name="ProjParams" displayName="Parameters" itemTransformer="Project" showIf="isEither"/>
+						<item name="ProjFileInfo" displayName="File Information" itemTransformer="Project" showIf="isEither"/>
+						<item
+							name="epi_DataSummary"
+							displayName="Cases"
+							showIf="isEither"
+							viewClassName="SyncroSim.Core.Forms.MultiRowDataFeedView"
+							viewClassAssembly="SyncroSim.Core.Forms"
+              filterTransformer="Fit"
+              itemTransformer="Fit"/>
+					</group>
+					<group name="FitOutputs" displayName="Outputs">
+						<item name="PostsGeneral" itemTransformer="Fit" showIf="isResult"/>
+						<item name="PostsContactRates" itemTransformer="Fit" showIf="isResult"/>
+						<item name="FitFileInfo" itemTransformer="Project" showIf="isEither"/>
+						<item
+						  name="epi_DataSummary"
+						  displayName="Results"
+						  showIf="isResult"
+						  viewClassName="SyncroSim.Core.Forms.MultiRowDataFeedView"
+						  viewClassAssembly="SyncroSim.Core.Forms"
+              filterTransformer="Project"
+              itemTransformer="Project"/>
+					</group>
+				</group>
+			</group>
+		</layout>
+	</layouts>
 </package>
