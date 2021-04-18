@@ -18,6 +18,7 @@ def monotonic(L):
     return non_increasing(L) or non_decreasing(L)
 
 
+
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
