@@ -30,7 +30,7 @@ pypmcaModels = datasheet(myScenario, "modelKarlenPypm_PypmcaModels")
 LUTRow = pypmcaModels[pypmcaModels.LUT == THIS_MODEL].iloc[0]
 
 startDate = theModel.t0
-endDate = datetime.datetime.now().date() + datetime.timedelta(days=15)
+endDate = datetime.datetime.now().date() + datetime.timedelta(days=28)
 
 if not numpy.isnan(runControl.EndDate):
     endDate = datetime.datetime.strptime(runControl.EndDate, "%Y-%m-%d").date()
@@ -108,7 +108,7 @@ for iter in range(int(runControl.Iterations)):
 
 
     tempTable['Iteration'] = str(iter+1)
-    tempTable['Timestep'] = [(startDate+datetime.timedelta(days=x)).strftime('%Y-%m-%d') for x in range(tempTable.shape[0])]
+    tempTable['Timestep'] = [startDate+datetime.timedelta(days=x) for x in range(tempTable.shape[0])]
 
     meltedTable = pandas.melt(tempTable, id_vars=["Timestep", "Iteration"])
     simSummaryDict[str(iter)] = meltedTable
@@ -118,14 +118,14 @@ epiDatasummary.columns = map(camelify, epiDatasummary.columns)
 epiDatasummary['Jurisdiction'] = LUTRow.Jurisdiction
 epiDatasummary['TransformerID'] = 'modelKarlenPypm_C_runIterations'
 
-epiVariable = datasheet(myScenario, "epi_Variable")
-varList = epiDatasummary.Variable.drop_duplicates()
-descripList = map(
-    lambda x: pypmcaCrosswalk[pypmcaCrosswalk.Standard == x].Description.iloc[0],
-    varList
-)
-variablesHere = pandas.DataFrame({'Name' : varList, 'Description' : descripList})
-saveDatasheet(myScenario, dataFrameDifference(epiVariable, variablesHere, 'Name'), "epi_Variable")
+# epiVariable = datasheet(myScenario, "epi_Variable")
+# varList = epiDatasummary.Variable.drop_duplicates()
+# descripList = map(
+#     lambda x: pypmcaCrosswalk[pypmcaCrosswalk.Standard == x].Description.iloc[0],
+#     varList
+# )
+# variablesHere = pandas.DataFrame({'Name' : varList, 'Description' : descripList})
+# saveDatasheet(myScenario, dataFrameDifference(epiVariable, variablesHere, 'Name'), "epi_Variable")
 
 epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction")
 if LUTRow.Jurisdiction not in epiJurisdiction.Name:
@@ -135,8 +135,4 @@ if LUTRow.Jurisdiction not in epiJurisdiction.Name:
         "epi_Jurisdiction"
     )
 
-# # option to delete the zeroes from the time series
-# # option invalidated by the transformer giving the expected values
-# deleteThese = epiDatasummary.index[epiDatasummary.value==0]
-# epiDatasummary = epiDatasummary.drop(index=deleteThese)
 saveDatasheet(myScenario, epiDatasummary, "epi_DataSummary")

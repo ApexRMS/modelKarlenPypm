@@ -77,7 +77,7 @@ for index in range(0, parameterFrame.shape[0]):
 theModel.boot()
 
 startDate = theModel.t0
-endDate = datetime.datetime.now().date() + datetime.timedelta(days=15)
+endDate = datetime.datetime.now().date() + datetime.timedelta(days=28)
 
 simLength = (endDate-startDate).days
 
@@ -91,15 +91,6 @@ if not realData.empty:
 
     realData.Timestep = realData.Timestep.apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
     realData = realData[realData.Timestep >= startDate]
-
-    if numpy.isnan(modelChoices.EndDate):
-        endDate = max(realData.Timestep)
-    else:
-        endDate = modelChoices.EndDate
-        endDate = datetime.datetime.strptime(
-            modelChoices.EndDate,
-            '%Y-%m-%d'
-        ).date()
 
     simLength = (endDate-startDate).days
 
@@ -228,7 +219,7 @@ for standardName in showThesePops:
 print("expectations done")
 
 tempTable['Iteration'] = 1
-tempTable['Timestep'] = [(startDate+datetime.timedelta(days=x)).strftime('%Y-%m-%d') for x in range(tempTable.shape[0])]
+tempTable['Timestep'] = [startDate+datetime.timedelta(days=x) for x in range(tempTable.shape[0])]
 
 meltedTable = pandas.melt(tempTable, id_vars=["Timestep", "Iteration"])
 simSummaryDict[str(iter)] = meltedTable
@@ -255,11 +246,5 @@ if LUTRow.Jurisdiction not in epiJurisdiction.Name:
         "epi_Jurisdiction"
     )
 
-# # option to delete the zeroes from the time series
-# # option invalidated by the transformer giving the expected values
-# deleteThese = epiDatasummary.index[epiDatasummary.value==0]
-# epiDatasummary = epiDatasummary.drop(index=deleteThese)
+
 saveDatasheet(myScenario, epiDatasummary, "epi_DataSummary")
-
-
-

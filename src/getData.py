@@ -19,7 +19,8 @@ myScenario = scenario()
 
 dataChoices = datasheet(myScenario, "modelKarlenPypm_DataChoices").drop(columns=['InputID'])
 
-crossWalk = pandas.read_csv(dataChoices.FileName.dropna().iloc[0])
+# crossWalk = pandas.read_csv(dataChoices.FileName.dropna().iloc[0])
+crossWalk = datasheet(myScenario, "modelKarlenPypm_PypmcaCrosswalk")
 
 def standardName(varName):
     if varName in crossWalk.Stock:
@@ -27,7 +28,7 @@ def standardName(varName):
     else:
         return getFancyName(varName)
 
-dataLUT = datasheet(myScenario, "modelKarlenPypm_PypmcaData").drop(columns=['InputID'])
+dataLUT = datasheet(myScenario, "modelKarlenPypm_PypmcaData")
 
 karlenSources = requests.get('http://data.ipypm.ca/list_data_folders/covid19').json()
 
@@ -129,7 +130,7 @@ for jurisdiction in list(dataChoices.DataSet):
                                 'Value' : theData,
                                 # if I don't take off the " - All" from the end of the string, we get an "All" subdivision of BC - a bit unsightly, I reckon
                                 'Jurisdiction' : fancyRegionChosen.replace('- All', '').strip(),
-                                'TransformerID' : 'modelKarlenPypm_C_getData'
+                                'TransformerID' : 'modelKarlenPypm_D_getData'
                             })
                         ], axis=0)
 
@@ -137,8 +138,8 @@ for jurisdiction in list(dataChoices.DataSet):
 totalData = totalData.reset_index().drop(columns=['index']).drop_duplicates().dropna()
 totalData.Value = totalData.Value.apply(int)
 
-epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction").drop(columns=['JurisdictionID'])
-tempJuris = datasheet(myScenario, "epi_Jurisdiction", empty=True).drop(columns=['JurisdictionID'])
+epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction")
+tempJuris = datasheet(myScenario, "epi_Jurisdiction", empty=True)
 for dataJuris in set(totalData.Jurisdiction):
     if dataJuris not in set(epiJurisdiction.Name):
         tempJuris = tempJuris.append({'Name' : dataJuris, 'Description' : ''}, ignore_index=True)

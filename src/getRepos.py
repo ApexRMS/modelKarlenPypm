@@ -25,7 +25,7 @@ renamingMap = {}; renamingCounter = 0
 PARAMETER_ATTIBUTES = ['name', 'description', 'initial_value', 'parameter_min', 'parameter_max']
 defaultParameters = pandas.DataFrame()
 
-for country in ['Canada', 'Germany', 'Brazil', 'USA', 'EU', 'BC', 'California']: #countryList:
+for country in countryList: # ['Canada', 'Germany', 'Brazil', 'USA', 'EU', 'BC', 'California']:
 
     if 'ref' in country.lower():
         continue
@@ -45,7 +45,7 @@ for country in ['Canada', 'Germany', 'Brazil', 'USA', 'EU', 'BC', 'California']:
 
         completeDescrip = regionInfo(country, filename)
 
-        modelRegion = completeDescrip['name']
+        modelRegion = completeDescrip['name']('-', ' ')
         modelCode = completeDescrip['code']
         modelAgeRange = ageRange(filename)
         modelVersionNum = modelVersion(filename)
