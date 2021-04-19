@@ -45,7 +45,7 @@ for country in countryList: # ['Canada', 'Germany', 'Brazil', 'USA', 'EU', 'BC',
 
         completeDescrip = regionInfo(country, filename)
 
-        modelRegion = completeDescrip['name']('-', ' ')
+        modelRegion = completeDescrip['name']
         modelCode = completeDescrip['code']
         modelAgeRange = ageRange(filename)
         modelVersionNum = modelVersion(filename)
