@@ -236,7 +236,7 @@ descripList = map(
     varList
 )
 variablesHere = pandas.DataFrame({'Name' : varList, 'Description' : descripList})
-saveDatasheet(myScenario, dataFrameDifference(epiVariable, variablesHere, 'Name'), "epi_Variable")
+saveDatasheet(myScenario, variablesHere[~variablesHere.Name.isin(epiVariable.Name)], "epi_Variable")
 
 epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction")
 if LUTRow.Jurisdiction not in epiJurisdiction.Name:
