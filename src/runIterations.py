@@ -118,15 +118,6 @@ epiDatasummary.columns = map(camelify, epiDatasummary.columns)
 epiDatasummary['Jurisdiction'] = LUTRow.Jurisdiction
 epiDatasummary['TransformerID'] = 'modelKarlenPypm_C_runIterations'
 
-# epiVariable = datasheet(myScenario, "epi_Variable")
-# varList = epiDatasummary.Variable.drop_duplicates()
-# descripList = map(
-#     lambda x: pypmcaCrosswalk[pypmcaCrosswalk.Standard == x].Description.iloc[0],
-#     varList
-# )
-# variablesHere = pandas.DataFrame({'Name' : varList, 'Description' : descripList})
-# saveDatasheet(myScenario, dataFrameDifference(epiVariable, variablesHere, 'Name'), "epi_Variable")
-
 epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction")
 if LUTRow.Jurisdiction not in epiJurisdiction.Name:
     saveDatasheet(
