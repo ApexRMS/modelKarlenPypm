@@ -36,15 +36,26 @@
         </datafeed>
         <datafeed name="PypmcaData" dataScope="Project">
           <datasheets>
-            <datasheet name="PypmcaData" valueMember="PypmcaDataID" displayMember="Name">
+            <datasheet name="PypmcaData" valueMember="PypmcaDataID" displayMember="Region">
               <columns>
                 <column name="PypmcaDataID" dataType="Integer" isPrimary="True"/>
                 <column name="ProjectID" dataType="Integer"/>
-                <column name="Name" dataType="String"/>
+                <column name="LUT" dataType="String" displayName="Name"/>
                 <column name="Country" dataType="String"/>
                 <column name="Region" dataType="String"/>
-                <column name="AgeStructure" dataType="Boolean" displayName="Age Structure"/>
-                <column name="URL" dataType="String" isVisible="False"/>
+                <column name="FancyCountry" dataType="String" isVisible="False"/>
+                <column name="FancyRegion" dataType="String" isVisible="False"/>
+              </columns>
+            </datasheet>
+          </datasheets>
+        </datafeed>
+        <datafeed name="DataDropdown" dataScope="Project">
+          <datasheets>
+            <datasheet name="DataDropdown" valueMember="DataDropdownID" displayMember="Name">
+              <columns>
+                <column name="DataDropdownID" dataType="Integer" isPrimary="True"/>
+                <column name="ProjectID" dataType="Integer"/>
+                <column name="Name" dataType="String"/>
               </columns>
             </datasheet>
           </datasheets>
@@ -59,8 +70,8 @@
                 <column name="Country" dataType="String"/>
                 <column name="Region" dataType="String"/>
                 <column name="Version" dataType="String"/>
-                <column name="AgeRange" dataType="String" displayName="Age Range"/>
                 <column name="Date" dataType="String"/>
+                <column name="AgeRange" dataType="String" isVisible="False"/>
                 <column name="Code" dataType="String" isVisible="False"/>
                 <column name="FileName" dataType="String" isVisible="False"/>
                 <column name="URL" dataType="String" isVisible="False"/>
@@ -94,11 +105,12 @@
         <datafeed name="CrosswalkFile"/>
         <datafeed name="PypmcaCrosswalk"/>
         <datafeed name="PypmcaData"/>
+        <datafeed name="DataDropdown"/>
         <datafeed name="PypmcaModels"/>
         <datafeed name="ParameterValues"/>
       </pipeline>
       <include>
-        <transformer name="runIterations"/>
+        <transformer name="getIterations"/>
         <transformer name="getExpectations"/>
         <transformer name="getData"/>
       </include>
@@ -188,10 +200,10 @@
       </pipeline>
     </transformer>
     <transformer
-      name="runIterations"
-      displayName="modelKarlenPypm_C_runIterations"
+      name="getIterations"
+      displayName="modelKarlenPypm_C_getIterations"
       programName="spyder"
-      programArguments="runIterations.py"
+      programArguments="getIterations.py"
       isRunnable ="True">
       <datafeeds>
         <datafeed name="RunControl" displayName="Run Control" dataScope="Scenario">
@@ -231,8 +243,10 @@
     					<columns>
     						<column name="InputID" dataType="Integer" isPrimary="True"/>
     						<column name="ScenarioID" dataType="Integer"/>
-    						<column name="DataSet" dataType="Integer" validationType="Datasheet" formula1="PypmcaData" allowDbNull="False" displayName="Data Set:"/>
-    						<column name="Regional" dataType="Boolean" displayName="Health Regions:"/>
+    						<column name="DataSet" dataType="Integer" validationType="Datasheet" formula1="DataDropdown" allowDbNull="False" displayName="Jurisdiction"/>
+                <column name="Age" dataType="Boolean"/>
+    						<column name="Sex" dataType="Boolean"/>
+                <column name="CrosswalkFile" dataType="String" isExternalFile="True"/>
     					</columns>
     				</datasheet>
     			</datasheets>
@@ -281,7 +295,6 @@
             filterTransformer="getData"
             itemTransformer="getData"/>
         </group>
-
       </group>
       <group name="PypmcaModels" displayName="Pypmca" appendTo="epi_Models">
         <group name="Expectations" appendTo="PypmcaModels">
@@ -289,7 +302,7 @@
           <item name="PopulationSelectionTable" filterTransformer="getExpectations" itemTransformer="getExpectations" showIf="isEither"/>
           <item name="ParameterValues" filterTransformer="getExpectations" itemTransformer="getExpectations" showIf="isEither"/>
           <item name="FitVariables" filterTransformer="getExpectations" itemTransformer="getExpectations" showIf="isResult"/>
-          <item name="FittedModelFile" filterTransformer="runIterations" itemTransformer="getExpectations" showIf="isResult"/>
+          <item name="FittedModelFile" filterTransformer="getIterations" itemTransformer="getExpectations" showIf="isResult"/>
           <item
             name="epi_DataSummary"
             displayName="Expectations"
@@ -300,17 +313,17 @@
             itemTransformer="getExpectations"/>
         </group>
         <group name="Simulations" appendTo="PypmcaModels">
-          <item name="PopulationSelectionTable" filterTransformer="runIterations" itemTransformer="runIterations" showIf="isEither"/>
-          <item name="FittedModelFile" filterTransformer="runIterations" itemTransformer="runIterations" showIf="isParent"/>
-          <item name="RunControl" filterTransformer="runIterations" itemTransformer="runIterations" showIf="isParent"/>
+          <item name="PopulationSelectionTable" filterTransformer="getIterations" itemTransformer="getIterations" showIf="isEither"/>
+          <item name="FittedModelFile" filterTransformer="getIterations" itemTransformer="getIterations" showIf="isParent"/>
+          <item name="RunControl" filterTransformer="getIterations" itemTransformer="getIterations" showIf="isParent"/>
           <item
             name="epi_DataSummary"
             displayName="Simulations"
             showIf="isResult"
             viewClassName="SyncroSim.Core.Forms.MultiRowDataFeedView"
             viewClassAssembly="SyncroSim.Core.Forms"
-            filterTransformer="runIterations"
-            itemTransformer="runIterations"/>
+            filterTransformer="getIterations"
+            itemTransformer="getIterations"/>
         </group>
       </group>
     </layout>
