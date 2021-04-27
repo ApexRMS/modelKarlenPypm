@@ -15,250 +15,250 @@ import headerFile
 env = ssimEnvironment()
 myScenario = scenario()
 
-# '''
-#     This file
-#         1) gets a list of all the models that Karlen has made available for different regions and countries
-#         2) gets a list of all the data sources available
+'''
+    This file
+        1) gets a list of all the models that Karlen has made available for different regions and countries
+        2) gets a list of all the data sources available
 
-#     These are exactly the data made available through his online ipypmm interface
-# '''
+    These are exactly the data made available through his online ipypmm interface
+'''
 
-# foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
-# countryFolders = foldersResponse.json()
-# countryList = list(countryFolders.keys())
+foldersResponse = requests.get('http://data.ipypm.ca/list_model_folders/covid19')
+countryFolders = foldersResponse.json()
+countryList = list(countryFolders.keys())
 
-# '''
-#     This loop gathers a list of all the models available.
+'''
+    This loop gathers a list of all the models available.
 
-#     1) a .pypm model object is downloaded for some region and country. since some of the models (previously, not sure if currently) didn't move, we reset each model and run for a number of time steps. If unique values make up more than some percentage of the time series of the infected population, then the model is accepted, else the loop is continued. The .pypm object is then discarded in this loop, not stored. Some of its information is stored for the PypmcaModels project-level datasheet (lut).
+    1) a .pypm model object is downloaded for some region and country. since some of the models (previously, not sure if currently) didn't move, we reset each model and run for a number of time steps. If unique values make up more than some percentage of the time series of the infected population, then the model is accepted, else the loop is continued. The .pypm object is then discarded in this loop, not stored. Some of its information is stored for the PypmcaModels project-level datasheet (lut).
 
-#     2) a crosswalk file is generated. the variable names used by Karlen (infected_v, daily deaths, etc) aren't the standard names used by Syncrosim, so the crosswalk file acts as a lut for standardised names (Reported (Variants), Deaths, etc). this is done through string parsing in the function headerFile.standardPopName, with ambiguities hard-coded. for instance, Karlen's 'reported' population is Syncrosim's 'Cases - Daily' data. this generated list is saved to the project-level PypmcaCrosswalk datasheet (lut).
+    2) a crosswalk file is generated. the variable names used by Karlen (infected_v, daily deaths, etc) aren't the standard names used by Syncrosim, so the crosswalk file acts as a lut for standardised names (Reported (Variants), Deaths, etc). this is done through string parsing in the function headerFile.standardPopName, with ambiguities hard-coded. for instance, Karlen's 'reported' population is Syncrosim's 'Cases - Daily' data. this generated list is saved to the project-level PypmcaCrosswalk datasheet (lut).
 
-#     3) each .pypm model object is stripped and 'default' parameter values taken (each model comes prefit, but in line with the online interface, the user will be offered the chance to change the parameters and refit the model to data before getting expectations and running simulations). these values (from all models) will be stored in a scenario-level ParameterValues datasheet, as a (necessary) dependency for the getExpectations transformer .
+    3) each .pypm model object is stripped and 'default' parameter values taken (each model comes prefit, but in line with the online interface, the user will be offered the chance to change the parameters and refit the model to data before getting expectations and running simulations). these values (from all models) will be stored in a scenario-level ParameterValues datasheet, as a (necessary) dependency for the getExpectations transformer .
 
-#     even though variable names and jurisdictions are gathered, nothing is added to those datasheets at this stage, to avoid crowding. jurisdiction will be added on the fly as specific models are chosen by the user, and variables will be added when selected in running the getExepctations transformer
-# '''
+    even though variable names and jurisdictions are gathered, nothing is added to those datasheets at this stage, to avoid crowding. jurisdiction will be added on the fly as specific models are chosen by the user, and variables will be added when selected in running the getExepctations transformer
+'''
 
-# modelsAvailable = []
+modelsAvailable = []
 
-# renamingMap = {}; renamingCounter = 0
+renamingMap = {}; renamingCounter = 0
 
-# # list of some of the parameter values to be stripped from each model
-# PARAMETER_ATTRIBUTES = ['name', 'description', 'initial_value', 'parameter_min', 'parameter_max']
-# defaultParameters = pandas.DataFrame()
+# list of some of the parameter values to be stripped from each model
+PARAMETER_ATTRIBUTES = ['name', 'description', 'initial_value', 'parameter_min', 'parameter_max']
+defaultParameters = pandas.DataFrame()
 
 
-# for country in countryList:
+for country in countryList:
 
-#     # we're not interested in offering any of the reference models to the user
-#     if 'ref' in country.lower():
-#         continue
+    # we're not interested in offering any of the reference models to the user
+    if 'ref' in country.lower():
+        continue
 
-#     # get the name of the country for the datasheet
-#     folder = countryFolders[country]
-#     countryName = folder.split('/')[-1]
+    # get the name of the country for the datasheet
+    folder = countryFolders[country]
+    countryName = folder.split('/')[-1]
 
-#     modelsResponse = requests.get('http://data.ipypm.ca/list_models/{}'.format(folder))
+    modelsResponse = requests.get('http://data.ipypm.ca/list_models/{}'.format(folder))
 
-#     # list of available regional models for the country
-#     modelFilenames = modelsResponse.json()
-#     modelList = list(modelFilenames.keys())
+    # list of available regional models for the country
+    modelFilenames = modelsResponse.json()
+    modelList = list(modelFilenames.keys())
 
-#     print('\n{}'.format(countryName))
+    print('\n{}'.format(countryName))
 
-#     for modelName in modelList:
+    for modelName in modelList:
 
-#         # get the filename - it gives such information as the region, model version and date published
-#         modelFn = modelFilenames[modelName]
-#         filename = modelFn.split('/')[-1]
+        # get the filename - it gives such information as the region, model version and date published
+        modelFn = modelFilenames[modelName]
+        filename = modelFn.split('/')[-1]
 
-#         # returns the standard name and ISO-3166 code of the region
-#         completeDescrip = headerFile.regionInfo(country, filename)
+        # returns the standard name and ISO-3166 code of the region
+        completeDescrip = headerFile.regionInfo(country, filename)
 
-#         # model stats: the ISO name for the region, ISO-3166 code, which age group the model was fit to and the version number
-#         # this step previously got the publishing date of the model, but that was deemed redundant when paired with the version number
-#         modelRegion = completeDescrip['name']
-#         modelCode = completeDescrip['code']
-#         modelAgeRange = headerFile.ageRangeModel(filename)
-#         modelVersionNum = headerFile.modelVersion(filename)
+        # model stats: the ISO name for the region, ISO-3166 code, which age group the model was fit to and the version number
+        # this step previously got the publishing date of the model, but that was deemed redundant when paired with the version number
+        modelRegion = completeDescrip['name']
+        modelCode = completeDescrip['code']
+        modelAgeRange = headerFile.ageRangeModel(filename)
+        modelVersionNum = headerFile.modelVersion(filename)
 
-#         # # age-specific models were not being included in the demonstration
-#         # if modelAgeRange != '':
-#         #     continue
+        # # age-specific models were not being included in the demonstration
+        # if modelAgeRange != '':
+        #     continue
 
-#         # (try to) download the model object
-#         modelURL = 'http://data.ipypm.ca/get_pypm/{}'.format(modelFn)
-#         try:
-#             theModel = headerFile.downloadModel(modelURL)
-#         except:
-#             continue
+        # (try to) download the model object
+        modelURL = 'http://data.ipypm.ca/get_pypm/{}'.format(modelFn)
+        try:
+            theModel = headerFile.downloadModel(modelURL)
+        except:
+            continue
 
-#         # reset the populations to zero before testing the model
-#         theModel.reset()
+        # reset the populations to zero before testing the model
+        theModel.reset()
 
-#         # (try to) generate data for the first 300 time steps
-#         try:
-#             theModel.generate_data(300)
-#         except AttributeError:
-#             continue
+        # (try to) generate data for the first 300 time steps
+        try:
+            theModel.generate_data(300)
+        except AttributeError:
+            continue
 
-#         # time series of the numbers of daily infections.
-#         somePredictions = theModel.populations['infected'].history
-#         # if unique values make up less than 20% of the length of the time series, the model is dropped
-#         if not headerFile.movementThreshold(somePredictions, 0.2):
-#             continue
+        # time series of the numbers of daily infections.
+        somePredictions = theModel.populations['infected'].history
+        # if unique values make up less than 20% of the length of the time series, the model is dropped
+        if not headerFile.movementThreshold(somePredictions, 0.2):
+            continue
 
-#         '''
-#             the country names Karlen uses aren't always countries, they're levels. for example, if the model is for BC, then the country is 'Canada' and the region is 'BC'. however, if the model is of a health authority in BC, then the country will be 'BC' and the region will be 'Fraser', say. this chuck of code corrects this so we can get correct jurisdiction names for a tree view in the charting window, for example.
-#         '''
-#         if countryName == 'BC':
-#             countryName = 'Canada'
-#         elif country == 'EU':
-#             countryName = completeDescrip['name']
-#         elif countryName == 'California':
-#             countryName = 'USA'
+        '''
+            the country names Karlen uses aren't always countries, they're levels. for example, if the model is for BC, then the country is 'Canada' and the region is 'BC'. however, if the model is of a health authority in BC, then the country will be 'BC' and the region will be 'Fraser', say. this chuck of code corrects this so we can get correct jurisdiction names for a tree view in the charting window, for example.
+        '''
+        if countryName == 'BC':
+            countryName = 'Canada'
+        elif country == 'EU':
+            countryName = completeDescrip['name']
+        elif countryName == 'California':
+            countryName = 'USA'
 
-#         # proper name - for example, 'Canada - British Columbia - Vancouver Coastal', to be written to epi-Jurisdiction later, should this model be chosen
-#         fullJurisdiction = '{} - {}'.format(countryName, modelRegion)
+        # proper name - for example, 'Canada - British Columbia - Vancouver Coastal', to be written to epi-Jurisdiction later, should this model be chosen
+        fullJurisdiction = '{} - {}'.format(countryName, modelRegion)
 
-#         # name displayed to the user in the drop-down menu in the later transformers
-#         fullModelDisplayName = (
-#             '{} ({}, ver. {})'.format(fullJurisdiction, modelAgeRange, modelVersionNum)
-#             if modelAgeRange != ''
-#             else '{} (ver. {})'.format(fullJurisdiction, modelVersionNum)
-#         )
+        # name displayed to the user in the drop-down menu in the later transformers
+        fullModelDisplayName = (
+            '{} ({}, ver. {})'.format(fullJurisdiction, modelAgeRange, modelVersionNum)
+            if modelAgeRange != ''
+            else '{} (ver. {})'.format(fullJurisdiction, modelVersionNum)
+        )
 
-#         '''
-#             all the model information needed to be written to the PypmcaModels datasheet
-#             the column 'LUT' is what the user sees (and chooses) in future transformer inputs. when a choice is made, the corresponding row in this table will given all the information necessary fill the model region entry in epi_Jurisdiction and model download information
-#         '''
-#         modelsAvailable.append({
-#             'LUT' : fullModelDisplayName,
-#             'Code' : modelCode,
-#             'Country' : countryName,
-#             'Region' : modelRegion,
-#             'Version' : modelVersionNum,
-#             'AgeRange': modelAgeRange,
-#             'Date' : headerFile.modelDate(filename),
-#             'FileName': filename,
-#             'URL' : modelURL,
-#             'Jurisdiction' : fullJurisdiction
-#         })
+        '''
+            all the model information needed to be written to the PypmcaModels datasheet
+            the column 'LUT' is what the user sees (and chooses) in future transformer inputs. when a choice is made, the corresponding row in this table will given all the information necessary fill the model region entry in epi_Jurisdiction and model download information
+        '''
+        modelsAvailable.append({
+            'LUT' : fullModelDisplayName,
+            'Code' : modelCode,
+            'Country' : countryName,
+            'Region' : modelRegion,
+            'Version' : modelVersionNum,
+            'AgeRange': modelAgeRange,
+            'Date' : headerFile.modelDate(filename),
+            'FileName': filename,
+            'URL' : modelURL,
+            'Jurisdiction' : fullJurisdiction
+        })
 
-#         print('\t{}'.format(fullModelDisplayName))
+        print('\t{}'.format(fullModelDisplayName))
 
-#         # get all the population names (infected, removed, in_icu, etc) in the model, so to make a crosswalk lut
-#         for pop in theModel.populations.values():
+        # get all the population names (infected, removed, in_icu, etc) in the model, so to make a crosswalk lut
+        for pop in theModel.populations.values():
 
-#             if 'frac' in pop.name.lower():
-#                 continue
-#             '''
-#                 (unique) Stock - Karlen's name, for example: infected_v
-#                 (unique) Standard: SSim name, for example, Infected (Variants)
-#                 Description: description of the requisite population (wither hard-coded here or provided by Karlen)
-#             '''
-#             renamingMap[renamingCounter] = {
-#                 'Stock' : pop.name,
-#                 'Standard' : headerFile.standardPopName(pop),
-#                 'Description' : pop.description.capitalize()
-#             }; renamingCounter += 1
+            if 'frac' in pop.name.lower():
+                continue
+            '''
+                (unique) Stock - Karlen's name, for example: infected_v
+                (unique) Standard: SSim name, for example, Infected (Variants)
+                Description: description of the requisite population (wither hard-coded here or provided by Karlen)
+            '''
+            renamingMap[renamingCounter] = {
+                'Stock' : pop.name,
+                'Standard' : headerFile.standardPopName(pop),
+                'Description' : pop.description.capitalize()
+            }; renamingCounter += 1
 
-#         # dictionary to store default parameter names and values
-#         paramDict = dict()
+        # dictionary to store default parameter names and values
+        paramDict = dict()
 
-#         for key in PARAMETER_ATTRIBUTES:
-#             paramDict[key] = []
+        for key in PARAMETER_ATTRIBUTES:
+            paramDict[key] = []
 
-#         paramDict['prior_function'] = []
-#         paramDict['prior_mean'] = []
-#         paramDict['prior_second'] = []
-#         paramDict['status'] = []
+        paramDict['prior_function'] = []
+        paramDict['prior_mean'] = []
+        paramDict['prior_second'] = []
+        paramDict['status'] = []
 
-#         for param in theModel.parameters.values():
+        for param in theModel.parameters.values():
 
-#             # model name, as we formatted it above
-#             paramDict['model'] = fullModelDisplayName
+            # model name, as we formatted it above
+            paramDict['model'] = fullModelDisplayName
 
-#             # parameter name, description, initial value, min and max parameter values
-#             for attrName in PARAMETER_ATTRIBUTES:
-#                 paramDict[attrName].append( getattr(param, attrName) )
+            # parameter name, description, initial value, min and max parameter values
+            for attrName in PARAMETER_ATTRIBUTES:
+                paramDict[attrName].append( getattr(param, attrName) )
 
-#             # prior functions for the parameters to be fit to data
-#             paramDict['prior_function'].append( headerFile.tablePriorDist(param.prior_function) )
+            # prior functions for the parameters to be fit to data
+            paramDict['prior_function'].append( headerFile.tablePriorDist(param.prior_function) )
 
-#             # some variables are fixed (and so have no supplied priors). others are variable, with either normal or uniform priors
-#             if param.prior_function == None:
-#                 paramDict['prior_mean'].append('')
-#                 paramDict['prior_second'].append('')
-#             else:
-#                 paramDict['prior_mean'].append(param.prior_parameters['mean'])
-#                 paramDict['prior_second'].append(list(param.prior_parameters.values())[1])
+            # some variables are fixed (and so have no supplied priors). others are variable, with either normal or uniform priors
+            if param.prior_function == None:
+                paramDict['prior_mean'].append('')
+                paramDict['prior_second'].append('')
+            else:
+                paramDict['prior_mean'].append(param.prior_parameters['mean'])
+                paramDict['prior_second'].append(list(param.prior_parameters.values())[1])
 
-#             # each parameter has either 'fixed' or 'variable' status, determines if the parameter is one fit to data, or not
-#             paramDict['status'].append( headerFile.tableStatus(param.get_status()) )
+            # each parameter has either 'fixed' or 'variable' status, determines if the parameter is one fit to data, or not
+            paramDict['status'].append( headerFile.tableStatus(param.get_status()) )
 
-#         defaultParameters = pandas.concat([
-#             defaultParameters,
-#             pandas.DataFrame(paramDict)
-#         ])
+        defaultParameters = pandas.concat([
+            defaultParameters,
+            pandas.DataFrame(paramDict)
+        ])
 
-# modelsAvail = pandas.DataFrame(modelsAvailable).drop_duplicates()
+modelsAvail = pandas.DataFrame(modelsAvailable).drop_duplicates()
 
-# # get the project-level datasheet for the models available and add only the ones that weren't there before
-# pypmcaModels = datasheet(myScenario, "modelKarlenPypm_PypmcaModels").drop(columns="PypmcaModelsID")
-# addThese = modelsAvail[-modelsAvail.LUT.isin(pypmcaModels.LUT)]
-# addThese = addThese.sort_values('Date').drop_duplicates('LUT', keep='last')
-# saveDatasheet(myScenario, addThese, "modelKarlenPypm_PypmcaModels")
+# get the project-level datasheet for the models available and add only the ones that weren't there before
+pypmcaModels = datasheet(myScenario, "modelKarlenPypm_PypmcaModels").drop(columns="PypmcaModelsID")
+addThese = modelsAvail[-modelsAvail.LUT.isin(pypmcaModels.LUT)]
+addThese = addThese.sort_values('Date').drop_duplicates('LUT', keep='last')
+saveDatasheet(myScenario, addThese, "modelKarlenPypm_PypmcaModels")
 
-# # save the default parameters for each model
-# defaultParameters.columns = list(map(headerFile.camelify, defaultParameters.columns))
-# saveDatasheet(myScenario, defaultParameters, "modelKarlenPypm_ParameterValues")
+# save the default parameters for each model
+defaultParameters.columns = list(map(headerFile.camelify, defaultParameters.columns))
+saveDatasheet(myScenario, defaultParameters, "modelKarlenPypm_ParameterValues")
 
-# '''
-#     here we create the crosswalk file and datasheet. the parsed variable names gathered before are combined with new hard-coded names
-# '''
-# renamingTable = pandas.DataFrame.from_dict(renamingMap, orient='index')
+'''
+    here we create the crosswalk file and datasheet. the parsed variable names gathered before are combined with new hard-coded names
+'''
+renamingTable = pandas.DataFrame.from_dict(renamingMap, orient='index')
 
-# # we've added each variable to the dictionary for all models, so there is massive duplication in the table
-# renamingTable = renamingTable.drop_duplicates(subset=['Stock'], keep='first').reset_index(drop=True).sort_values('Stock')
+# we've added each variable to the dictionary for all models, so there is massive duplication in the table
+renamingTable = renamingTable.drop_duplicates(subset=['Stock'], keep='first').reset_index(drop=True).sort_values('Stock')
 
-# '''
-#     Karlen's models make many populations available, but not all of the populations have both daily and cumulative corresponding series. so, through a diff function - 'delta' here, we can create daily time series for some of the cumulative series given
-# '''
-# addedOnes = pandas.DataFrame([
-#     ['daily infected', headerFile.getFancyName('daily infected'), 'number of new infections per day'],
-#     ['daily deaths',  headerFile.getFancyName('daily deaths'), 'number of new deaths per day'],
-#     ['daily recovered',  headerFile.getFancyName('daily recovered'), 'number of recoveries per day'],
-#     ['daily symptomatic',  headerFile.getFancyName('daily symptomatic'), 'number of people who have shown symptoms per day'],
-#     ['daily infected_v',  headerFile.getFancyName('daily infected_v'), 'daily number of people infected with variant'],
-#     ['daily reported',  headerFile.getFancyName('daily reported'), 'cases reported per day'],
-#     ['daily reported_v',  headerFile.getFancyName('daily reported_v'), 'variant cases reported per day'],
-#     ['daily removed',  headerFile.getFancyName('daily removed'), 'people removed from the contagious population per day'],
-#     ['daily removed_v',  headerFile.getFancyName('daily removed_v'), 'people removed from the variant contagious population per day'],
-#     ], columns=['Stock', 'Standard', 'Description']
-# )
-# renamingTable = pandas.concat([renamingTable, addedOnes]).dropna().drop_duplicates(subset=['Stock'], keep='first')
-# renamingTable = renamingTable.sort_values('Stock').reset_index(drop=True)
+'''
+    Karlen's models make many populations available, but not all of the populations have both daily and cumulative corresponding series. so, through a diff function - 'delta' here, we can create daily time series for some of the cumulative series given
+'''
+addedOnes = pandas.DataFrame([
+    ['daily infected', headerFile.getFancyName('daily infected'), 'number of new infections per day'],
+    ['daily deaths',  headerFile.getFancyName('daily deaths'), 'number of new deaths per day'],
+    ['daily recovered',  headerFile.getFancyName('daily recovered'), 'number of recoveries per day'],
+    ['daily symptomatic',  headerFile.getFancyName('daily symptomatic'), 'number of people who have shown symptoms per day'],
+    ['daily infected_v',  headerFile.getFancyName('daily infected_v'), 'daily number of people infected with variant'],
+    ['daily reported',  headerFile.getFancyName('daily reported'), 'cases reported per day'],
+    ['daily reported_v',  headerFile.getFancyName('daily reported_v'), 'variant cases reported per day'],
+    ['daily removed',  headerFile.getFancyName('daily removed'), 'people removed from the contagious population per day'],
+    ['daily removed_v',  headerFile.getFancyName('daily removed_v'), 'people removed from the variant contagious population per day'],
+    ], columns=['Stock', 'Standard', 'Description']
+)
+renamingTable = pandas.concat([renamingTable, addedOnes]).dropna().drop_duplicates(subset=['Stock'], keep='first')
+renamingTable = renamingTable.sort_values('Stock').reset_index(drop=True)
 
-# # save the crosswalk datasheet
-# pypmcaCrosswalk = datasheet(myScenario, "modelKarlenPypm_PypmcaCrosswalk")
-# addThese = renamingTable[-renamingTable.Stock.isin(pypmcaCrosswalk.Stock)]
-# saveDatasheet(myScenario, addThese, "modelKarlenPypm_PypmcaCrosswalk")
+# save the crosswalk datasheet
+pypmcaCrosswalk = datasheet(myScenario, "modelKarlenPypm_PypmcaCrosswalk")
+addThese = renamingTable[-renamingTable.Stock.isin(pypmcaCrosswalk.Stock)]
+saveDatasheet(myScenario, addThese, "modelKarlenPypm_PypmcaCrosswalk")
 
-# # agreement that every crosswalk file will given the name of the package as well (future-proofing)
-# renamingTable['PackageName'] = 'modelKarlenPypm'
+# agreement that every crosswalk file will given the name of the package as well (future-proofing)
+renamingTable['PackageName'] = 'modelKarlenPypm'
 
-# crosswalkFilename = '{}\\StockToStandard.csv'.format(env.TransferDirectory)
-# renamingTable.to_csv(crosswalkFilename, index=False)
+crosswalkFilename = '{}\\StockToStandard.csv'.format(env.TransferDirectory)
+renamingTable.to_csv(crosswalkFilename, index=False)
 
-# '''
-#     crosswalk file also saved to CSV. if there are any errors, the programmer can change the entries and upload the file to any future
-#     transformers. it'll be given preference over the PypmcaCrosswalk datasheet
-# '''
-# crosswalkFile = datasheet(myScenario, 'modelKarlenPypm_CrosswalkFile', empty=True)
-# crosswalkFile.File = [crosswalkFilename]
-# crosswalkFile.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
-# saveDatasheet(myScenario, crosswalkFile, 'modelKarlenPypm_CrosswalkFile')
+'''
+    crosswalk file also saved to CSV. if there are any errors, the programmer can change the entries and upload the file to any future
+    transformers. it'll be given preference over the PypmcaCrosswalk datasheet
+'''
+crosswalkFile = datasheet(myScenario, 'modelKarlenPypm_CrosswalkFile', empty=True)
+crosswalkFile.File = [crosswalkFilename]
+crosswalkFile.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
+saveDatasheet(myScenario, crosswalkFile, 'modelKarlenPypm_CrosswalkFile')
 
 
 '''
