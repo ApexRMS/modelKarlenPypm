@@ -24,14 +24,14 @@ def install(package):
 	for instance, infected_v -> Infected (Variants)
 				  reported_v -> Cases (Variants)
 '''
-def getFancyName(varName:str):
+def getFancyName(variable_name:str):
 
 	# total -> Total
-    if varName.lower() == 'total':
+    if variable_name.lower() == 'total':
         return 'Total'
 
 	# take out underscores and convert to lower case for parsing. so, infected_v -> infected v
-    varName = varName.replace('_', ' ').lower()
+    variable_name = variable_name.replace('_', ' ').lower()
 
 	# whether the variable is daily or cumulative
     interval = ''
@@ -43,39 +43,39 @@ def getFancyName(varName:str):
 		else, if any of the cumulative keywords are found ('total', 'sum', 'cumulative'), mark and strip.
 		for ex. 'total reported' -> 'reported'
 	'''
-    if re.findall(r'daily', varName) != []:
+    if re.findall('daily', variable_name) != []:
         interval = 'daily'
-        varName = re.sub('daily|-', '', varName).strip()
-    elif re.findall(r'total|cumulative|sum', varName) != []:
+        variable_name = re.sub('daily|-', '', variable_name).strip()
+    elif re.findall('total|cumulative|sum', variable_name) != []:
         interval = 'cumulative'
-        varName = re.sub('total|cumulative|sum|-', '', varName).strip()
+        variable_name = re.sub('total|cumulative|sum|-', '', variable_name).strip()
 
-	# ex. 'non icu hospitalized' -> 'Non icu hospltalized'
-    varName = varName.replace('non ', 'Non ')
+	# ex. 'non icu hospitalized' -> 'Non icu hospitalized'
+    variable_name = variable_name.replace('non ', 'Non ')
 	# ex. 'non icu rel' -> 'Non icu Released'
-    varName = varName.replace(' rel', ' Released')
+    variable_name = variable_name.replace(' rel', ' Released')
 	# ex. 'vacc cand' -> 'Vaccination Candidates'
-    varName = varName.replace('vacc ', 'Vaccination ')
-    varName = varName.replace(' cand', ' Candidates')
+    variable_name = variable_name.replace('vacc ', 'Vaccination ')
+    variable_name = variable_name.replace(' cand', ' Candidates')
 	# ex. 'sus vacc cand' -> 'Susceptible Vaccination Candidates'
-    varName = varName.replace('sus ', 'Susceptible ')
+    variable_name = variable_name.replace('sus ', 'Susceptible ')
 	# what Karlen calls 'reported', we call 'cases'
-    varName = varName.replace('reported', 'cases')
+    variable_name = variable_name.replace('reported', 'cases')
 	# ex.
-    varName = varName.replace('rec ', 'Recovered ')
-    varName = varName.replace('mortality', 'deaths')
+    variable_name = variable_name.replace('rec ', 'Recovered ')
+    variable_name = variable_name.replace('mortality', 'deaths')
 
 	# ex. 'infected v' -> 'infected (Variants)'
-    if varName[-2:] == ' v':
-        varName = varName.replace(' v', ' (Variants)')
+    if variable_name[-2:] == ' v':
+        variable_name = variable_name.replace(' v', ' (Variants)')
 	# ex.'Non Icu hospitalized' -> 'Non ICU hospitalized'
-    varName = varName.title().replace('Icu', 'ICU')
+    variable_name = variable_name.title().replace('Icu', 'ICU')
 
 	# whether daily or cumulative is tacked onto the end of the variable name if determined through input
     if interval != '':
-        varName = '{} - {}'.format(varName, interval.title())
+        variable_name = '{} - {}'.format(variable_name, interval.title())
 
-    return varName
+    return variable_name
 
 
 '''
@@ -93,38 +93,38 @@ def monotonic(L):
 
 '''
 	getFancyName usually returns names without the 'daily' and 'cumulative' qualifiers, so this function
-	teste the time series for monotonicity and returns daily if not monotonic
+	tests the time series for monotonicity and returns daily if not monotonic
 '''
 def standardPopName(pop:pypmca.Population):
 
-    varName = getFancyName(pop.name)
+    variable_name = getFancyName(pop.name)
 
-    if re.findall('total|daily|cumulative', varName.lower()):
-        return varName
+    if re.findall('total|daily|cumulative', variable_name.lower()):
+        return variable_name
 
-    standardName = '{} - {}'.format(
-        varName,
+    standard_Ssim_name = '{} - {}'.format(
+        variable_name,
         'Cumulative' if monotonic(pop.history) else 'Daily'
     )
-    return standardName
+    return standard_Ssim_name
 
 
 '''
 	in the data repositories, Karlen gives German states by their English names, while the pycountry lookup
 	package that we use to get the regions of the models gives the names in German, so to prevent there being
 	two jurisdictions in the chart referring to the same region, we'll go with the native state names and
-	translate the english names to German for consistency.
+	translate the English names to German for consistency.
 
 	this is to prevent having a model of Bayern but data from Bavaria (same place, but will be different in
 	the charting display)
 '''
-def germanStateName(stateName:str):
+def germanStateName(state_name:str):
 
     # hella slow
-    # return translate.Translator(from_lang="en", to_lang="de").translate(stateName).replace('-', '_')
+    # return translate.Translator(from_lang="en", to_lang="de").translate(state_name).replace('-', '_')
 
 	# lut for the German state names
-    germanStateLUT = {
+    german_state_LUT = {
         'Baden-Wurttemberg' : 'Baden-Württemberg',
         'Bavaria' : 'Bayern',
         'Hesse' : 'Hessen',
@@ -137,16 +137,16 @@ def germanStateName(stateName:str):
         'Thuringia' : 'Thüringen'
     }
 
-	# if the state name isn;t the same in ENglish as it is in German
-    if stateName in germanStateLUT:
-        return germanStateLUT[stateName].replace('-', '_')
+	# if the state name isn't the same in English as it is in German
+    if state_name in german_state_LUT:
+        return german_state_LUT[state_name].replace('-', '_')
 
 	# the other of the 16 states
     otherStates = ['Schleswig-Holstein', 'Hamburg', 'Bremen', 'Brandenburg', 'Berlin', 'Saarland']
 
-	# if it's one of the German states that doesn't needd to be translated, return the input
-    if stateName in otherStates:
-        return stateName.replace('-', '_')
+	# if it's one of the German states that doesn't need to be translated, return the input
+    if state_name in otherStates:
+        return state_name.replace('-', '_')
     else:
 		# if the input string isn't a German state at all, return None
         return None
@@ -161,13 +161,13 @@ def germanStateName(stateName:str):
 	all of the models were maintained (or parametrised), so this is used in the getRepos
 	transformer to filter good models from bad ones
 '''
-def movementThreshold(series, desiredProportion):
-    if (desiredProportion < 0) or (desiredProportion > 1):
+def movementThreshold(series, desired_proportion):
+    if (desired_proportion < 0) or (desired_proportion > 1):
         print('*** ERROR: the proportion must be between 0 and 1 ***')
         return None
     # ratio of unique values to total number of values
-    theRatio = len(set(series))/len(series)
-    if theRatio < desiredProportion:
+    ratio_of_unique_values = len(set(series))/len(series)
+    if ratio_of_unique_values < desired_proportion:
         return False
     else:
         return True
@@ -178,7 +178,7 @@ def movementThreshold(series, desiredProportion):
 
 	used in the getRepos (model deconstruction) and getExpectations (model rebuilding) transformers
 '''
-def tablePriorDist(input):
+def tablePriorDist(input:int):
     if input == None:
         return 3
     if isinstance(input, int) or isinstance(input, float):
@@ -193,7 +193,7 @@ def tablePriorDist(input):
 
 	used in the getRepos (model deconstruction) and getExpectations (model rebuilding) transformers
 '''
-def tableStatus(input):
+def tableStatus(input:int):
     if isinstance(input, int) or isinstance(input, float):
         return 'fixed' if input == 1 else 'variable'
     elif isinstance(input, str):
@@ -201,7 +201,7 @@ def tableStatus(input):
     return None
 
 # was used in the getRepos and getExpectations transformers to translate integer values to number types
-def tableType(input):
+def tableType(input:int):
     if isinstance(input, int) or isinstance(input, float):
         return 'int' if input == 1 else 'float'
     elif isinstance(input, str):
@@ -209,7 +209,7 @@ def tableType(input):
     return None
 
 # capitalises the first character in a string while not altering the other (as does .title())
-def capitaliseFirst(string):
+def capitaliseFirst(string:str):
     return string[0].upper() + string[1:]
 
 '''
@@ -225,7 +225,7 @@ def delta(cumul):
     diff.insert(0,diff[0])
     return diff
 
-# converts a strint to camel case
+# converts a string to camel case
 def camelify(x):
 	return ''.join(capitaliseFirst(i) for i in x.replace('_', ' ').replace(',', ' ').split(' '))
 
@@ -243,82 +243,82 @@ def openModel(my_pickle):
         print('Currently, ipypm only supports models with time_step = 1 day.')
     return model
 
-# downloads a model given a URL. deprecated in favuor of pypmca.Model.open...
+# downloads a model given a URL. deprecated in favour of pypmca.Model.open...
 def downloadModel(theURL):
 
     try:
-        modelResponse = requests.get(theURL);
+        model_response = requests.get(theURL);
     except requests.exceptions.RequestException as error:
         print('Error retrieving model folder list over network:')
         print()
         print(error)
         return None
-    myPickle = modelResponse.content
+    myPickle = model_response.content
     return openModel(myPickle)
 
 # retrieves an integer from an input string
 def getSubinteger(string:str):
-    numString = ''.join([s for s in list(string) if s.isdigit()])
-    if not numString:
+    string_containing_integer = ''.join([s for s in list(string) if s.isdigit()])
+    if not string_containing_integer:
         return None
-    return int(numString)
+    return int(string_containing_integer)
 
 '''
 	parses a string (usually a model region) and retrieves the date range.
 	sample inputs are '<10', '20-59', '89+', '10to50', 'bw_a2', 'Germany_age', 'BC'
 	returns a dictionary indexed by 'lower' and 'upper'
 '''
-def ageRangeString(theString:str):
+def ageRangeString(the_string:str):
 
 	# if the input string is a legit country or province/state/city name, no information
-    if theString in [x.name for x in pycountry.countries]:
+    if the_string in [x.name for x in pycountry.countries]:
         return {}
-    if theString in [x.name for x in pycountry.subdivisions]:
+    if the_string in [x.name for x in pycountry.subdivisions]:
         return {}
 
 	# no information if there are no numbers in the string
-    if not re.search('\d', theString):
+    if not re.search('\d', the_string):
         return {}
 
 	# convert to lower case for less cases during parsing
-    theString = theString.lower()
+    the_string = the_string.lower()
 
     '''
 		for the data set Germany_age, the regions tale the form:
 			<ISO 3166-2 code>_a<digit>
-		the first twe characters before the underscore give the region of the dataset, the 'a' is for 'age' (presumably)
+		the first two characters before the underscore give the region of the data set, the 'a' is for 'age' (presumably)
 		and the number refers to the relevant age band of the Robert-Koch Institut (RKI) data sets and descriptions.
 		the RKI age bands with indices are (0) <4, (1) 5-14, (2) 15-34, (3) 35-59, (4) 60-79 and (5) 80+.
 
 		below we set up a lut for the min and max ages, and parse the region name to return the correct age range.
 	'''
-	# if the inut string matches the format
-    if re.compile('[a-zA-Z]{2}_a[0-5]*').match(theString):
+	# if the input string matches the format
+    if re.compile('[a-zA-Z]{2}_a[0-5]*').match(the_string):
 
 		# luts for the RKI age bands
         DE_lower_ages = {0:0, 1: 5, 2:15, 3:35, 4:60, 5:80}
         DE_upper_ages = {0:4, 1:14, 2:34, 3:59, 4:79, 5:None}
 
 		# the age band index is the only number in the string, fetch it
-        rkiIndex = getSubinteger(theString)
-        fromAge = DE_lower_ages[rkiIndex]
-        toAge = DE_upper_ages[rkiIndex]
+        rki_age_band_index = getSubinteger(the_string)
+        from_age = DE_lower_ages[rki_age_band_index]
+        to_age = DE_upper_ages[rki_age_band_index]
 
-        return {'lower': fromAge, 'upper': toAge}
+        return {'lower': from_age, 'upper': to_age}
 
 	# search for the key words 'under', 'less', '<'. zB. '<10', 'under 20', etc
-    if re.findall('under|less|<', theString):
-        return {'lower': None, 'upper': getSubinteger(theString)}
+    if re.findall('under|less|<', the_string):
+        return {'lower': None, 'upper': getSubinteger(the_string)}
 
 	# search for the key words 'over', 'plus', '+'. zB. 'over 80', '89+', etc
-    if re.findall('over|plus|\+|>', theString):
-        return {'lower': getSubinteger(theString), 'upper': None}
+    if re.findall('over|plus|\+|>', the_string):
+        return {'lower': getSubinteger(the_string), 'upper': None}
 
 	# some data sets have age unknown
-    if 'unknown' in theString:
+    if 'unknown' in the_string:
         return {'lower': None, 'upper': None}
 
-    if re.findall(' to |\dto\d|_|-', theString):
+    if re.findall(' to |\dto\d|_|-', the_string):
 
         '''
     		searching for the keywords 'to' (with or without surrounding spaces), hyphen and underscore.
@@ -328,34 +328,34 @@ def ageRangeString(theString:str):
     		extract the integers from the two pieces and return them. the age '0' returns None
     	'''
 
-        subStrs = re.split('to|_|-', theString)
-        fromAge = getSubinteger(subStrs[0])
-        toAge = getSubinteger(subStrs[1])
-        if fromAge == 0:
-            return {'lower': None, 'upper': toAge}
+        string_fragment_list = re.split('to|_|-', the_string)
+        from_age = getSubinteger(string_fragment_list[0])
+        to_age = getSubinteger(string_fragment_list[1])
+        if from_age == 0:
+            return {'lower': None, 'upper': to_age}
         else:
-            return {'lower': fromAge, 'upper': toAge}
+            return {'lower': from_age, 'upper': to_age}
 
-    elif re.findall('\ds', theString):
+    elif re.findall('\ds', the_string):
 
         '''
     		some data sets have their age stratification in 10-year bands, for which the age range is denoted only
     		by the start of the band. zB. 'BC 10s', 'fraser_40s'
 
-    		assuming that there are no extraneous integers in the string, extract the integer fron the input string
+    		assuming that there are no extraneous integers in the string, extract the integer from the input string
     		and find the upper limit of the band by adding 9.
     		zB. '40s' -> '40 to 49'
     	'''
 
 		# split by a sensible separator (if there is one)
-        subStrs = re.split(' |_|-', theString)
+        string_fragment_list = re.split(' |_|-', the_string)
 		# filter the substrings by possession of an integer
-        subStr = [string for index, string in enumerate(subStrs) if re.findall('\ds', string)]
+        subStr = [string for index, string in enumerate(string_fragment_list) if re.findall('\ds', string)]
 		# retrieve the integer from the first string piece with an integer and mark that as the starting age
-        fromAge = getSubinteger( subStr[0] )
+        from_age = getSubinteger( subStr[0] )
 		# add 9 to get the upper age of the band
-        toAge = fromAge + 9
-        return {'lower': fromAge, 'upper': toAge}
+        to_age = from_age + 9
+        return {'lower': from_age, 'upper': to_age}
 
 	# if all the check fail, give up
     return {'lower': None, 'upper': None}
@@ -366,30 +366,30 @@ def ageRangeString(theString:str):
     ex. 'ca65plus_2_5_1005.pypm'
 
     we assume that the age information is contained in the first fragment before the underscore,
-    so split the string at the underscore and run the ageRangeString in trhe fragment
+    so split the string at the underscore and run the ageRangeString in the fragment
 
     returns pretty print for the jurisdiction column of PypmcaModels
 
 '''
-def ageRangeModel(modelName:str):
+def ageRangeModel(model_name:str):
 
-    firstBit = modelName.split('_')[0]
+    first_string_fragment = model_name.split('_')[0]
 
-    ageDict = ageRangeString(firstBit)
+    age_band_dict = ageRangeString(first_string_fragment)
 
-    if ageDict == {}:
+    if age_band_dict == {}:
         return ''
 
-    if set(ageDict.values()) == {None}:
+    if set(age_band_dict.values()) == {None}:
         return ''
 
-    if ageDict['lower'] == None:
-        return 'under {}'.format(ageDict['upper'])
+    if age_band_dict['lower'] == None:
+        return 'under {}'.format(age_band_dict['upper'])
 
-    if ageDict['upper'] == None:
-        return 'over {}'.format(ageDict['lower'])
+    if age_band_dict['upper'] == None:
+        return 'over {}'.format(age_band_dict['lower'])
 
-    return '{} -> {}'.format(ageDict['lower'], ageDict['upper'])
+    return '{} -> {}'.format(age_band_dict['lower'], age_band_dict['upper'])
 
 '''
     reads the version number of the model
@@ -399,17 +399,17 @@ def ageRangeModel(modelName:str):
     the version number are the second and third string segments when split by underscore. extract the
     integers from those pieces and paste them together in a format string
 '''
-def modelVersion(modelName):
+def modelVersion(model_name:str):
 
-    if 'ref' in modelName:
-        theDigits = [x for x in modelName.replace('.pypm', '').split('_') if x.isdigit()]
-        if len(theDigits) == 1:
-            return '{}.0'.format(theDigits[0])
+    if 'ref' in model_name:
+        the_date_in_digits = [x for x in model_name.replace('.pypm', '').split('_') if x.isdigit()]
+        if len(the_date_in_digits) == 1:
+            return '{}.0'.format(the_date_in_digits[0])
         else:
-            return '.'.join(theDigits)
+            return '.'.join(the_date_in_digits)
 
-    modelName = modelName.replace('.pypm', '').replace('_d', '')
-    first, sec = modelName.split('_')[1:3]
+    model_name = model_name.replace('.pypm', '').replace('_d', '')
+    first, sec = model_name.split('_')[1:3]
     return '{}.{}'.format(first, sec)
 
 '''
@@ -421,27 +421,27 @@ def modelVersion(modelName):
     given (and based of the date at which these models each became available), we assume that every
     month before the current one happened in the previous year (2020)
 '''
-def modelDate(modelName):
+def modelDate(model_name:str):
 
     # we're not treating reference models on this package
-    if 'reference' in modelName:
+    if 'reference' in model_name:
         return None
 
     # cut the extension (some model names have an extra fragment '_d', so we cut that too)
-    modelName = modelName.replace('.pypm', '').replace('_d', '')
+    model_name = model_name.replace('.pypm', '').replace('_d', '')
     # the date stub is now the final fragment
-    theStub = modelName.split('_')[-1]
+    publishing_date_stub = model_name.split('_')[-1]
 
     # if there's no date, return None
-    if theStub == '':
+    if publishing_date_stub == '':
         return None
     # after taking off trailing '_d', if the date fragment doesn't follow the four character convention, ignore it
-    if len(theStub) != 4:
+    if len(publishing_date_stub) != 4:
         return None
 
     # the month is given by the first two characters, the day by the last two
-    month = int(theStub[:2])
-    day = int(theStub[2:])
+    month = int(publishing_date_stub[:2])
+    day = int(publishing_date_stub[2:])
     # calculate the most likely date (based on the number of the current month) and return a date
     return datetime.date(2021 if month < datetime.datetime.now().month else 2020, month, day)
 
@@ -455,68 +455,68 @@ def modelDate(modelName):
 
     this function combines these two strings to find a region using pycountry lookups
 '''
-def regionInfo(countryName:str, modelName:str):
+def regionInfo(country_name:str, model_name:str):
 
     '''
         as with the model name 'ca65plus_2_5_1005', the ISO 3166-2 code is given by the first two characters
         of the filename string when split by underscores. retrieve this fragment.
     '''
-    theSplit = modelName.replace(' ', '').split('_')
-    twoLetter = theSplit[0][:2].upper()
+    string_fragment_list = model_name.replace(' ', '').split('_')
+    twoLetter = string_fragment_list[0][:2].upper()
 
-    iso3166Code = ''
-    finalName = ''
+    iso_3166_code = ''
+    fancy_region_name = ''
 
     '''
-        sourt out the true country names. example function calls are given for each case
+        sort out the true country names. example function calls are given for each case
     '''
 
     # regionInfo('USA', 'oh_2_8_0316')
-    if countryName == 'USA':
-        countryName = 'United States'
+    if country_name == 'USA':
+        country_name = 'United States'
     # regionInfo('California', 'ca65plus_2_5_1005.pypm'))
-    elif countryName == 'California':
-        countryName = 'United States'
+    elif country_name == 'California':
+        country_name = 'United States'
 
     # if it's actually a country we were given:
-    if countryName in [x.name for x in pycountry.countries]:
+    if country_name in [x.name for x in pycountry.countries]:
         # regionInfo('Canada', ' qc_2_8_0311.pypm')
-        countryCode = pycountry.countries.get(name=countryName).alpha_2
-        iso3166Code = '{}-{}'.format(countryCode, twoLetter)
-        finalName = pycountry.subdivisions.get(code=iso3166Code).name
+        country_code = pycountry.countries.get(name=country_name).alpha_2
+        iso_3166_code = '{}-{}'.format(country_code, twoLetter)
+        fancy_region_name = pycountry.subdivisions.get(code=iso_3166_code).name
 
     # if the country is 'EU' then the first two characters will be the ISO 3166 country code
-    elif countryName == 'EU':
+    elif country_name == 'EU':
         # regionInfo('EU', 'it_2_8_0224.pypm')
         localeInfo = pycountry.countries.get(alpha_2=twoLetter)
-        iso3166Code = '{}-{}'.format(countryName, twoLetter)
-        finalName = localeInfo.name
+        iso_3166_code = '{}-{}'.format(country_name, twoLetter)
+        fancy_region_name = localeInfo.name
 
-    elif countryName == 'reference':
+    elif country_name == 'reference':
         # regionInfo('reference', 'ref_model_2.pypm')
         # get the numbers from the string
-        theDigits = [x for x in modelName.replace('.pypm', '').split('_') if x.isdigit()]
+        the_date_in_digits = [x for x in model_name.replace('.pypm', '').split('_') if x.isdigit()]
         # print the digits at the end
-        # finalName = '{} ({})'.format(countryName.title(), ' '.join(theDigits))
-        finalName = countryName.title()
+        # fancy_region_name = '{} ({})'.format(country_name.title(), ' '.join(the_date_in_digits))
+        fancy_region_name = country_name.title()
 
-    if countryName == 'BC':
+    if country_name == 'BC':
 
         lut = { # health authorities lut
             'coastal' : 'Vancouver Coastal', # North Shore/East Garibaldi, Richmond, Vancouver, Unknown
             'northern' : 'Northern', # Northeast, Northern Interior, Northwest, Unknown
             'island' : 'Vancouver Island', # Central, North, South
             'interior' : 'Interior',  #  East Kootenay, Okanagan, Kootenay Boundary, Thompson Cariboo Shuswap
-            'fraser' : 'Fraser' # Frase East, North, South, Unknown
+            'fraser' : 'Fraser' # Fraser East, North, South, Unknown
         }
 
-        iso3166Code = 'CA-BC'
+        iso_3166_code = 'CA-BC'
 
         if twoLetter == 'BC':
             # regionInfo('BC', 'bc60_2_3_0911.pypm')
-            finalName = 'British Columbia'
+            fancy_region_name = 'British Columbia'
         else:
             # regionInfo('BC', 'interior_2_8_0309.pypm')
-            finalName = 'British Columbia - {}'.format( lut[ theSplit[0] ].title() )
+            fancy_region_name = 'British Columbia - {}'.format( lut[ string_fragment_list[0] ].title() )
 
-    return {'code' : iso3166Code, 'name' : finalName}
+    return {'code' : iso_3166_code, 'name' : fancy_region_name}
