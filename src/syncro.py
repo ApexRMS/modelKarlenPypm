@@ -67,7 +67,7 @@ class scenario:
         self.filepath = env.LibraryFilePath
         self.console = '{}\\SyncroSim.Console.exe'.format(ssimEnvironment().ProgramDirectory)
 
-        cmdLine = '"{}" --list --datasheets --lib={}'.format(self.console, env.LibraryFilePath)
+        cmdLine = '"{}" --list --datasheets --lib="{}"'.format(self.console, env.LibraryFilePath)
         # print(type(parseOutputAsTable(cmdLine)))
         self.datasheetNames = parseOutputAsTable(cmdLine)
 
@@ -78,7 +78,7 @@ class scenario:
 def getScenarios(theScenario:scenario, fullTable:bool=False):
     tempDir = tempfile.mkdtemp()
     exportFilename = '{}\\export.csv'.format(tempDir)
-    cmdLine = '{} --lib={} --file={} --list --scenarios --csv'.format(theScenario.console, theScenario.filepath, exportFilename)
+    cmdLine = '{} --lib="{}" --file={} --list --scenarios --csv'.format(theScenario.console, theScenario.filepath, exportFilename)
     subprocess.call(cmdLine)
     theExport = pandas.read_csv(exportFilename)
     theExport.columns = [x.replace(' ', '_') for x in theExport.columns]
@@ -92,7 +92,7 @@ def getScenarios(theScenario:scenario, fullTable:bool=False):
 
 def datasheet(theScenario:scenario, datasheetName:str=None, empty:bool=False):
 
-    getDatasheetsLine = '"{}" --list --datasheets --lib={}'.format(theScenario.console, theScenario.filepath)
+    getDatasheetsLine = '"{}" --list --datasheets --lib="{}"'.format(theScenario.console, theScenario.filepath)
     currentDatasheets = parseOutputAsTable(getDatasheetsLine)
 
     if datasheetName == None:
@@ -103,7 +103,7 @@ def datasheet(theScenario:scenario, datasheetName:str=None, empty:bool=False):
     else:
         tempDir = tempfile.mkdtemp()
         exportFilename = '{}\\export.csv'.format(tempDir)
-        cmdLine = '"{}" --lib={} --export --includepk --sheet={} --file={} --sid={} --pid={}'.format(
+        cmdLine = '"{}" --lib="{}" --export --includepk --sheet={} --file={} --sid={} --pid={}'.format(
             theScenario.console, theScenario.filepath, datasheetName, exportFilename, theScenario.scenarioId, theScenario.projectId
         )
         subprocess.call(cmdLine)
@@ -116,7 +116,7 @@ def datasheet(theScenario:scenario, datasheetName:str=None, empty:bool=False):
 
 def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, datasheetName:str, append:bool=False):
 
-    getDatasheetsLine = '"{}" --list --datasheets --lib={}'.format(theScenario.console, theScenario.filepath)
+    getDatasheetsLine = '"{}" --list --datasheets --lib="{}"'.format(theScenario.console, theScenario.filepath)
     currentDatasheets = parseOutputAsTable(getDatasheetsLine)
 
     if datasheetName not in list(currentDatasheets.Name):
@@ -131,7 +131,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
     dataSheet.to_csv(exportFilename, index=False)
 
     if append == False:
-        # cmdLine = '"{}" --import --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
+        # cmdLine = '"{}" --import --lib="{}" --sid={} --pid={} --sheet={} --file={}'.format(
         #     theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
         # )
         # subprocess.call(cmdLine)
@@ -142,7 +142,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
         dataSheet.to_csv(exportFilename2, index=False)
 
     else:
-        cmdLine = '"{}" --import --append --lib={} --sid={} --pid={} --sheet={} --file={}'.format(
+        cmdLine = '"{}" --import --append --lib="{}" --sid={} --pid={} --sheet={} --file={}'.format(
             theScenario.console, theScenario.filepath, theScenario.scenarioId, theScenario.projectId, datasheetName, exportFilename
         )
         subprocess.call(cmdLine)
@@ -212,7 +212,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 #     def newProject(self, newProjectName:str):
 #         if newProjectName in self.getProjects():
 #             return self.getProjectID(newProjectName)
-#         cmdLine = '{} --lib={} --create --project --name={}'.format(self.theConsole, self.__libraryPath, newProjectName)
+#         cmdLine = '{} --lib="{}" --create --project --name={}'.format(self.theConsole, self.__libraryPath, newProjectName)
 #         terminalOutput = str(subprocess.check_output(cmdLine), 'utf-8')
 #         newProjectNumber = int(terminalOutput.split(' ')[-1].replace('\r\n', ''))
 #         self.__projects[newProjectNumber] = newProjectName
@@ -227,7 +227,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 #             parentProjectNumber = secondParameter
 #         if newScenarioName in self.getScenarios(parentProjectNumber):
 #             return self.getScenarioID(newScenarioName, parentProjectNumber )
-#         cmdLine = '{} --lib={} --create --scenario --tpid={} --name={}'.format(self.theConsole, self.__libraryPath, parentProjectNumber, newScenarioName)
+#         cmdLine = '{} --lib="{}" --create --scenario --tpid={} --name={}'.format(self.theConsole, self.__libraryPath, parentProjectNumber, newScenarioName)
 #         terminalOutput = str(subprocess.check_output(cmdLine), 'utf-8')
 #         newScenarioNumber = int(terminalOutput.split(' ')[-1].replace('\r\n', ''))
 #         self.__scenarios[newScenarioNumber] = newScenarioName
@@ -240,12 +240,12 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 #         return self.__libraryPath
 #
 #     def getConsoles(self):
-#         cmdLine = '{} --lib={} --list --consoles'.format(self.theConsole, self.__libraryPath)
+#         cmdLine = '{} --lib="{}" --list --consoles'.format(self.theConsole, self.__libraryPath)
 #         asTable = self.__parseOutputAsTable(cmdLine)
 #         return list(asTable.Name)
 #
 #     def getProjects(self, fullTable:bool=False):
-#         cmdLine = '{} --lib={} --list --projects'.format(self.theConsole, self.__libraryPath)
+#         cmdLine = '{} --lib="{}" --list --projects'.format(self.theConsole, self.__libraryPath)
 #         # print(cmdLine)
 #         asTable = self.__parseOutputAsTable(cmdLine)
 #         if fullTable:
@@ -269,14 +269,14 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 #         return None
 #
 #     def getDataProviders(self):
-#         cmdLine = '{} --lib={} --list --dataproviders'.format(self.theConsole, self.__libraryPath)
+#         cmdLine = '{} --lib="{}" --list --dataproviders'.format(self.theConsole, self.__libraryPath)
 #         asTable = self.__parseOutputAsTable(cmdLine)
 #         return dict(zip(asTable.Name, asTable.DisplayName))
 #
 #     def getScenarios(self, projectID:int, fullTable:bool=False):
 #         tempDir = tempfile.mkdtemp()
 #         exportFilename = '{}\\export.csv'.format(tempDir)
-#         cmdLine = '{} --lib={} --file={} --list --scenarios --csv'.format(self.theConsole, self.__libraryPath, exportFilename)
+#         cmdLine = '{} --lib="{}" --file={} --list --scenarios --csv'.format(self.theConsole, self.__libraryPath, exportFilename)
 #         subprocess.call(cmdLine)
 #         theExport = pandas.read_csv(exportFilename)
 #         theExport.columns = [x.replace(' ', '_') for x in theExport.columns]
@@ -296,12 +296,12 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 #
 #     def getDatasheet(self, scenarioID:int=None, datasheetName:str=None, projectID:int=None, empty:bool=False):
 #         if datasheetName == None:
-#             cmdLine = '{} --lib={} --list --datasheets'.format(self.theConsole, self.__libraryPath)
+#             cmdLine = '{} --lib="{}" --list --datasheets'.format(self.theConsole, self.__libraryPath)
 #             subprocess.call(cmdLine)
 #         else:
 #             tempDir = tempfile.mkdtemp()
 #             exportFilename = '{}\\export.csv'.format(tempDir)
-#             cmdLine = '{} --lib={} --sheet={} --file={} --export --includepk'.format(self.theConsole, self.__libraryPath, datasheetName, exportFilename)
+#             cmdLine = '{} --lib="{}" --sheet={} --file={} --export --includepk'.format(self.theConsole, self.__libraryPath, datasheetName, exportFilename)
 #             if projectID != None:
 #                 cmdLine += ' --pid={0}'.format(projectID)
 #             if scenarioID != None:
@@ -321,7 +321,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 #         # tempDir = tempfile.mkdtemp()
 #         # exportFilename = '{}\\export.csv'.format(tempDir)
 #         # dataSheet.to_csv(exportFilename, index=False)
-#         # cmdLine = '{} --lib={} --sid={} --sheet={} --file={} --import'.format(self.theConsole, self.__libraryPath, scenarioID, sheetGivenName, exportFilename)
+#         # cmdLine = '{} --lib="{}" --sid={} --sheet={} --file={} --import'.format(self.theConsole, self.__libraryPath, scenarioID, sheetGivenName, exportFilename)
 #         # if projectID != None:
 #         #     cmdLine += '--pid={}'.format(projectID)
 #         # # print(cmdLine)
@@ -332,17 +332,17 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
 #     ##################### BROKEN #################
 #
 #     def getDatafeeds(self):
-#         cmdLine = '{} --lib={} --list --datafeeds'.format(self.theConsole, self.__libraryPath)
+#         cmdLine = '{} --lib="{}" --list --datafeeds'.format(self.theConsole, self.__libraryPath)
 #         print(cmdLine)
 #         subprocess.call(cmdLine)
 #
 #     def getModels(self):
-#         cmdLine = '{} --lib={} --list --models'.format(self.theConsole, self.__libraryPath)
+#         cmdLine = '{} --lib="{}" --list --models'.format(self.theConsole, self.__libraryPath)
 #         print(cmdLine)
 #         subprocess.call(cmdLine)
 #
 #     def getLibrary(self):
-#         cmdLine = '{} --lib={} --list --library'.format(self.theConsole, self.__libraryPath)
+#         cmdLine = '{} --lib="{}" --list --library'.format(self.theConsole, self.__libraryPath)
 #         subprocess.call(cmdLine)
 #         asTable = self.__parseOutputAsTable(cmdLine)
 #         return asTable

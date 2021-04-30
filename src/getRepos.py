@@ -5,11 +5,12 @@ for i in list(globals().keys()):
         exec('del {}'.format(i))
 
 import requests
-import collections
+#import collections
 import datetime
 import pycountry
+import pandas
 
-import sys
+#import sys
 
 
 ''' uncomment and insert these two lines into the code to halkt execution at a certaion point without exiting the interpreter '''

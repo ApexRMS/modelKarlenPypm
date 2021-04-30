@@ -4,7 +4,6 @@ for i in list(globals().keys()):
     if(i[0] != '_'):
         exec('del {}'.format(i))
 
-from matplotlib import pyplot as plt
 
 '''
     this transformer takes user input and

@@ -7,7 +7,6 @@ import requests
 import collections
 import datetime
 import numpy
-import matplotlib.pyplot as plt
 
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
