@@ -57,73 +57,73 @@ the_model = headerFile.downloadModel(model_url)
     pypmca package files) and written to a file
 '''
 
-# get the user-supplied parameter values from the datasheet
-parameter_frame = datasheet(myScenario, "modelKarlenPypm_ParameterValues")
-# since the values for all models are specified in the same sheet, be sure only to pull the ones for the specific model
-parameter_frame = parameter_frame[parameter_frame.Model == THIS_MODEL].reset_index()
+# # get the user-supplied parameter values from the datasheet
+# parameter_frame = datasheet(myScenario, "modelKarlenPypm_ParameterValues")
+# # since the values for all models are specified in the same sheet, be sure only to pull the ones for the specific model
+# parameter_frame = parameter_frame[parameter_frame.Model == THIS_MODEL].reset_index()
 
-# for each parameter
-for index in range(0, parameter_frame.shape[0]):
+# # for each parameter
+# for index in range(0, parameter_frame.shape[0]):
 
-    # set the parameter name,m description, and other class attributes
-    name = parameter_frame.Name.loc[index]
+#     # set the parameter name,m description, and other class attributes
+#     name = parameter_frame.Name.loc[index]
 
-    the_model.parameters[name].description = parameter_frame.Description[index]
+#     the_model.parameters[name].description = parameter_frame.Description[index]
 
-    the_model.parameters[name].set_min(parameter_frame.ParameterMin[index])
-    the_model.parameters[name].set_max(parameter_frame.ParameterMax[index])
+#     the_model.parameters[name].set_min(parameter_frame.ParameterMin[index])
+#     the_model.parameters[name].set_max(parameter_frame.ParameterMax[index])
 
-    if the_model.parameters[name].parameter_type == 'int':
-        the_model.parameters[name].set_value(int( parameter_frame.InitialValue[index] ))
-    elif the_model.parameters[name].parameter_type == 'float':
-        the_model.parameters[name].set_value( parameter_frame.InitialValue[index] )
+#     if the_model.parameters[name].parameter_type == 'int':
+#         the_model.parameters[name].set_value(int( parameter_frame.InitialValue[index] ))
+#     elif the_model.parameters[name].parameter_type == 'float':
+#         the_model.parameters[name].set_value( parameter_frame.InitialValue[index] )
 
-    the_model.parameters[name].new_initial_value()
+#     the_model.parameters[name].new_initial_value()
 
-    # fixed variables are held constant during the fitting step
-    if parameter_frame.Status[index] == 'fixed':
-        the_model.parameters[name].set_fixed()
+#     # fixed variables are held constant during the fitting step
+#     if parameter_frame.Status[index] == 'fixed':
+#         the_model.parameters[name].set_fixed()
 
 
-    # variable values are fit during the fitting step by the Optimizer object.
-    elif parameter_frame.Status[index] == 'variable':
+#     # variable values are fit during the fitting step by the Optimizer object.
+#     elif parameter_frame.Status[index] == 'variable':
 
-        # the prior distribution of each parameter is either normal or uniform
-        prior_func = parameter_frame.PriorFunction[index]
+#         # the prior distribution of each parameter is either normal or uniform
+#         prior_func = parameter_frame.PriorFunction[index]
 
-        # we're not allowing a parameter to be set as variable without a specified prior function
-        if prior_func == '':
-            print('\t parameter {} set to variable but prior function not set (currently {}). \
-                  no changes made, please adjust and rerun ***'.format(name, prior_func))
-            continue
+#         # we're not allowing a parameter to be set as variable without a specified prior function
+#         if prior_func == '':
+#             print('\t parameter {} set to variable but prior function not set (currently {}). \
+#                   no changes made, please adjust and rerun ***'.format(name, prior_func))
+#             continue
 
-        # setting the parameters of the prior distributions
-        prior_params = dict()
+#         # setting the parameters of the prior distributions
+#         prior_params = dict()
 
-        if parameter_frame.PriorFunction[index] == 'uniform':
+#         if parameter_frame.PriorFunction[index] == 'uniform':
 
-            prior_params = {
-                'mean': parameter_frame.PriorMean[index],
-                'half_width' : parameter_frame.PriorSecond[index]
-            }
+#             prior_params = {
+#                 'mean': parameter_frame.PriorMean[index],
+#                 'half_width' : parameter_frame.PriorSecond[index]
+#             }
 
-        elif parameter_frame.PriorFunction[index] == 'normal':
+#         elif parameter_frame.PriorFunction[index] == 'normal':
 
-            prior_params = {
-                'mean' : parameter_frame.PriorMean[index],
-                'sigma' : parameter_frame.PriorSecond[index]
-            }
+#             prior_params = {
+#                 'mean' : parameter_frame.PriorMean[index],
+#                 'sigma' : parameter_frame.PriorSecond[index]
+#             }
 
-        the_model.parameters[name].set_variable(prior_function=prior_func, prior_parameters=prior_params)
+#         the_model.parameters[name].set_variable(prior_function=prior_func, prior_parameters=prior_params)
 
-    else:
-        print('*** STATUS FOR THE PARAMETER {} IS MISTYPED. CAN ONLY BE `fixed` or `variable`, \
-              not {} ***'.format(name, parameter_frame['name'][index]))
+#     else:
+#         print('*** STATUS FOR THE PARAMETER {} IS MISTYPED. CAN ONLY BE `fixed` or `variable`, \
+#               not {} ***'.format(name, parameter_frame['name'][index]))
 
-    # call the reset class method to complete the process of setting this parameter
-    the_model.parameters[name].reset()
+#     # call the reset class method to complete the process of setting this parameter
+#     the_model.parameters[name].reset()
 
-the_model.boot()
+# the_model.boot()
 
 '''
     get the start date assigned to the model; this is important for figuring out the start of the
@@ -139,26 +139,74 @@ simulation_length = (end_date-start_date).days
 
 print("fitting step")
 
-# try to read case data brought in as a dependency
-real_data = datasheet(myScenario, "epi_DataSummary")
+data_for_fitting = datasheet(myScenario, "epi_DataSummary")
+
+fitting_jurisdiction =LUTRow.Jurisdiction
+
+data_for_fitting = data_for_fitting[data_for_fitting.Jurisdiction == fitting_jurisdiction]
+
+if data_for_fitting.empty:
+
+    print('*** ERROR: fitting data imported has no data for the model jurisdiction ***')
+
+else:
+
+    first_instance = data_for_fitting.Iteration[0]
+
+    if numpy.isnan(first_instance):
+        data_for_fitting = data_for_fitting[numpy.isnan(data_for_fitting.Iteration)]
+    else:
+        data_for_fitting = data_for_fitting[data_for_fitting.Iteration == first_instance]
+
+    model_age_band = headerFile.ageRangeString(LUTRow.AgeRange)
+
+    if(model_age_band['lower'] == None):
+        data_for_fitting = data_for_fitting[numpy.isnan(data_for_fitting.AgeMin)]
+    else:
+        data_for_fitting = data_for_fitting[data_for_fitting.AgeMin == model_age_band['lower']]
+
+    if(model_age_band['upper'] == None):
+        data_for_fitting = data_for_fitting[numpy.isnan(data_for_fitting.AgeMax)]
+    else:
+        data_for_fitting = data_for_fitting[data_for_fitting.AgeMax == model_age_band['upper']]
+
+    if re.findall('boy|man|male', THIS_MODEL):
+        data_for_fitting = data_for_fitting[data_for_fitting.Sex == 'Male']
+    elif re.findall('girl|woman|female', THIS_MODEL):
+        data_for_fitting = read_data[data_for_fitting.Sex == 'Female']
+    else:
+        data_for_fitting = data_for_fitting[-data_for_fitting.Sex.isin(['Male', 'Female'])]
+
 
 # if there's case data available for fitting
-if not real_data.empty:
+
+if data_for_fitting.empty:
+
+    print('*** ERROR: fitting data empty after filtering. try importing another dataset ***')
+
+else:
 
     # change the time steps from string to datetime objects
-    real_data.Timestep = real_data.Timestep.apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
-    real_data = real_data[real_data.Timestep >= start_date]
+    data_for_fitting.Timestep = data_for_fitting.Timestep.apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
+    data_for_fitting = data_for_fitting[data_for_fitting.Timestep >= start_date]
 
     # this is the variable we want to fit the model to
     fitting_variable = model_choices.FitVariable
 
     # if data for the fitting variable chosen is available in the case data given, then proceed
-    if fitting_variable in set(real_data.Variable):
-        real_data = real_data[real_data.Variable == fitting_variable]
+    if fitting_variable in set(data_for_fitting.Variable):
+        data_for_fitting = data_for_fitting[data_for_fitting.Variable == fitting_variable]
     # if not, default to fitting the cumulative cases
     else:
-        real_data = real_data[real_data.Variable == 'Cases - Cumulative']
+        data_for_fitting = data_for_fitting[data_for_fitting.Variable == 'Cases - Cumulative']
         fitting_variable = 'Cases - Cumulative'
+
+# if there's case data available for fitting
+if data_for_fitting.empty:
+
+    print('*** ERROR: fitting data imported does not contain data for reported cases or infection. try importing another dataset ***')
+
+else:
 
     '''
         the only two time series that can be fit are 'reported' cases and 'infected' cases, either on a daily
@@ -181,13 +229,13 @@ if not real_data.empty:
 
     # days in the time series on which to start and end data fitting
     start_fitting_day = 1 if numpy.isnan(model_choices.StartFit) else int(model_choices.StartFit)
-    end_fitting_day = real_data.shape[0] if numpy.isnan(model_choices.EndFit) else int(model_choices.EndFit)
+    end_fitting_day = data_for_fitting.shape[0] if numpy.isnan(model_choices.EndFit) else int(model_choices.EndFit)
 
     # fitting using least squares (detailed by Karlen in the pypmca code)
     myOptimiser = Optimizer(
         the_model,
         fitting_string,
-        real_data.Value.values,
+        data_for_fitting.Value.values,
         [start_fitting_day, end_fitting_day],
         cumulative_reset_from_zero,
         str(model_choices.SkipDatesText[0])

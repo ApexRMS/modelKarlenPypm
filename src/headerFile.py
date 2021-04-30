@@ -270,11 +270,15 @@ def getSubinteger(string:str):
 '''
 def ageRangeString(the_string:str):
 
+    # if it's not a sstring
+    if not isinstance(the_string, str):
+        return {'lower': None, 'upper': None}
+
 	# if the input string is a legit country or province/state/city name, no information
     if the_string in [x.name for x in pycountry.countries]:
-        return {}
+        return {'lower': None, 'upper': None}
     if the_string in [x.name for x in pycountry.subdivisions]:
-        return {}
+        return {'lower': None, 'upper': None}
 
 	# no information if there are no numbers in the string
     if not re.search('\d', the_string):
@@ -318,7 +322,7 @@ def ageRangeString(the_string:str):
     if 'unknown' in the_string:
         return {'lower': None, 'upper': None}
 
-    if re.findall(' to |\dto\d|_|-', the_string):
+    if re.findall('\d[ ]+to[ ]+\d|\d_\d|\d-\d', the_string):
 
         '''
     		searching for the keywords 'to' (with or without surrounding spaces), hyphen and underscore.
@@ -389,7 +393,7 @@ def ageRangeModel(model_name:str):
     if age_band_dict['upper'] == None:
         return 'over {}'.format(age_band_dict['lower'])
 
-    return '{} -> {}'.format(age_band_dict['lower'], age_band_dict['upper'])
+    return '{} to {}'.format(age_band_dict['lower'], age_band_dict['upper'])
 
 '''
     reads the version number of the model
