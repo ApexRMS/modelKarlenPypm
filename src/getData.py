@@ -9,6 +9,7 @@ import requests
 import collections
 import datetime
 import numpy
+import pycountry
 
 from syncro import *
 import headerFile
@@ -62,7 +63,10 @@ for index, row in dataLUT.iterrows():
 
     # Karlen's country and region names
     country_chosen = row.Country.split(' ')[0]
-    region_chosen = row.Region.split(' ')[0]
+    if row.Region.split(' ')[0] in ['Germany', 'All', 'Unknown']:
+        region_chosen = row.Region.split(' ')[0]
+    else:
+        region_chosen = row.Region
 
     # data folder
     data_folder = karlen_sources[country_chosen]
@@ -113,14 +117,14 @@ for index, row in dataLUT.iterrows():
                     continue
 
                 # progress
-                print('population: {}, metric: {}'.format(population_name, metric))
+                print('file: {}\npopulation: {}, metric: {}'.format(filename, population_name, metric))
 
                 # name of the file the data is in (a key in the dictionary pd_dict)
                 filename = regional_data[population_name][metric]['filename']
 
                 # sometimes a given filename isn't actually provided
                 if filename not in pd_dict.keys():
-                    print('\t*** Filename not found ***\n')
+                    print('\t*** FILENAME NOT FOUND ***\n')
                     continue
 
                 # gives the column header of the time series. usually coded, such as "BC-xt"
@@ -128,7 +132,7 @@ for index, row in dataLUT.iterrows():
 
                 # possible that the header's not there
                 if header not in pd_dict[filename]:
-                    print('\t*** requested header not in data table ***\n')
+                    print('\t*** REQUESTED HEADeR NOT IN DATA TABLE ***\n')
                     continue
 
                 # get the age range of the data. this is usually contained in the region name or the header
@@ -140,7 +144,7 @@ for index, row in dataLUT.iterrows():
 
                 # sometimes the time series is all NaN values
                 if all(numpy.isnan(the_data)):
-                    print('\t*** all NA data ***\n')
+                    print('\t*** ALL NA DATA ***\n')
                     continue
 
                 # the description also gives the start date of the time series
@@ -212,6 +216,7 @@ for index, row in dataLUT.iterrows():
                     temp_data_descrip = data_here.drop(columns=['Value', 'Timestep']).drop_duplicates()
                     # print the signature
                     print(temp_data_descrip)
+                    print()
 
                     # a list of the columns
                     cols = list(temp_data_descrip.columns)
@@ -222,7 +227,7 @@ for index, row in dataLUT.iterrows():
                         merged = pandas.merge(total_data[cols].drop_duplicates(), temp_data_descrip, on=cols, how='outer', indicator=True)
                         # if it's unique,then _merge should only say "left_join". else, the signature is not unique
                         if not merged[merged._merge=="both"].empty:
-                            print('\t*** data set duplicated ***\n')
+                            print('\t*** DATA SET DUPLICATED ***\n')
 
                             # collect a list of duplicated data sets for review
                             temp_data_descrip['country'] = row.Country
@@ -233,7 +238,7 @@ for index, row in dataLUT.iterrows():
                 # incorporate the data
                 total_data = pandas.concat([ total_data, data_here ])
 
-                print()
+                print('\n\n')
 
 # the "Value"  column of epi_DataSummary can't have NaNs
 total_data = total_data[total_data.Value.notnull()] # .drop_duplicates()
@@ -245,19 +250,11 @@ if ('AgeMin' in total_data.columns) or ('AgeMax' in total_data.columns):
     total_data.AgeMin = total_data.AgeMin.astype('Int32')
     total_data.AgeMax = total_data.AgeMax.astype('Int32')
 
-    # should the user choose not to have age stratified data, we exclude those rows
-    if (not data_choices.isnull().Age) and (data_choices.Age == 'No'):
-        total_data = total_data[numpy.isnan(total_data.AgeMax) & numpy.isnan(total_data.AgeMin)].drop(columns=['AgeMin', 'AgeMax'])
-
 # it there's sex information, Sex needs to be integer values
 if 'Sex' in total_data.columns:
 
     # convert to integers
     total_data.Sex = total_data.Sex.astype('Int32')
-
-    # should the user choose not to have sex stratified data, we exclude those rows
-    if (not data_choices.isnull().Sex) and (data_choices.Sex != 'Yes'):
-        total_data = total_data[numpy.isnan(total_data.Sex)].drop(columns=['Sex'])
 
 # write only new jurisdictions to epi_Jurisdiction
 epiJurisdiction = datasheet(myScenario, "epi_Jurisdiction")
