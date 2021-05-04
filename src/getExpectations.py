@@ -25,6 +25,7 @@ import re
 import pandas
 import numpy
 import datetime
+import copy
 
 import headerFile
 from syncro import *
@@ -36,18 +37,18 @@ env = ssimEnvironment()
 myScenario = scenario()
 
 # user input (model name, fitting parameter, etc)
-modelChoices = datasheet(myScenario, "modelKarlenPypm_ModelChoices").iloc[0]
+model_choices = datasheet(myScenario, "modelKarlenPypm_ModelChoices").iloc[0]
 
 # the name/handle of this model
-THIS_MODEL = modelChoices.ModelName
+THIS_MODEL = model_choices.ModelName
 
 #sheet giving the list of models - will be used as a lut
 pypmcaModels = datasheet(myScenario, "modelKarlenPypm_PypmcaModels")
 # get the corresponding (single) row in the lut
 LUTRow = pypmcaModels[pypmcaModels.LUT == THIS_MODEL].iloc[0]
 # get the URL of the model and download the .pypm object
-modelURL = LUTRow.URL
-theModel = headerFile.downloadModel(modelURL)
+model_url = LUTRow.URL
+the_model = headerFile.downloadModel(model_url)
 
 '''
     in the options (in line with Karlen's online ipypm interface), the user is allowed to change the default
@@ -58,72 +59,75 @@ theModel = headerFile.downloadModel(modelURL)
 '''
 
 # get the user-supplied parameter values from the datasheet
-parameterFrame = datasheet(myScenario, "modelKarlenPypm_ParameterValues")
-# since the values for all models are specified in the same sheet, be sure only to pull the ones for the specifiec model
-parameterFrame = parameterFrame[parameterFrame.Model == THIS_MODEL].reset_index()
+parameter_frame = datasheet(myScenario, "modelKarlenPypm_ParameterValues")
 
-# for each parameter
-for index in range(0, parameterFrame.shape[0]):
+if not parameter_frame.empty:
 
-    # set the parameter name,m description, and other class attributes
-    name = parameterFrame.Name.loc[index]
+    # since the values for all models are specified in the same sheet, be sure only to pull the ones for the specific model
+    parameter_frame = parameter_frame[parameter_frame.Model == THIS_MODEL].reset_index()
 
-    theModel.parameters[name].description = parameterFrame.Description[index]
+    # for each parameter
+    for index in range(0, parameter_frame.shape[0]):
 
-    theModel.parameters[name].set_min(parameterFrame.ParameterMin[index])
-    theModel.parameters[name].set_max(parameterFrame.ParameterMax[index])
+        # set the parameter name,m description, and other class attributes
+        name = parameter_frame.Name.loc[index]
 
-    if theModel.parameters[name].parameter_type == 'int':
-        theModel.parameters[name].set_value(int( parameterFrame.InitialValue[index] ))
-    elif theModel.parameters[name].parameter_type == 'float':
-        theModel.parameters[name].set_value( parameterFrame.InitialValue[index] )
+        the_model.parameters[name].description = parameter_frame.Description[index]
 
-    theModel.parameters[name].new_initial_value()
+        the_model.parameters[name].set_min(parameter_frame.ParameterMin[index])
+        the_model.parameters[name].set_max(parameter_frame.ParameterMax[index])
 
-    # fixed variables are held constant during the fitting step
-    if parameterFrame.Status[index] == 'fixed':
-        theModel.parameters[name].set_fixed()
+        if the_model.parameters[name].parameter_type == 'int':
+            the_model.parameters[name].set_value(int( parameter_frame.InitialValue[index] ))
+        elif the_model.parameters[name].parameter_type == 'float':
+            the_model.parameters[name].set_value( parameter_frame.InitialValue[index] )
+
+        the_model.parameters[name].new_initial_value()
+
+        # fixed variables are held constant during the fitting step
+        if parameter_frame.Status[index] == 'fixed':
+            the_model.parameters[name].set_fixed()
 
 
-    # variable values are fit during the fitting step by the Optimizer object.
-    elif parameterFrame.Status[index] == 'variable':
+        # variable values are fit during the fitting step by the Optimizer object.
+        elif parameter_frame.Status[index] == 'variable':
 
-        # the prior distribution of each parameter is either normal or uniform
-        priorFunc = parameterFrame.PriorFunction[index]
+            # the prior distribution of each parameter is either normal or uniform
+            prior_func = parameter_frame.PriorFunction[index]
 
-        # we're not allowing a parameter to be set as variable without a specified prior function
-        if priorFunc == '':
-            print('\t parameter {} set to variable but prior function not set (currently {}). \
-                  no changes made, please adjust and rerun ***'.format(name, priorFunc))
-            continue
+            # we're not allowing a parameter to be set as variable without a specified prior function
+            if prior_func == '':
+                print('\t parameter {} set to variable but prior function not set (currently {}). \
+                      no changes made, please adjust and rerun ***'.format(name, prior_func))
+                continue
 
-        # setting the parameters of the prior distributions
-        priorParams = dict()
+            # setting the parameters of the prior distributions
+            prior_params = dict()
 
-        if parameterFrame.PriorFunction[index] == 'uniform':
+            if parameter_frame.PriorFunction[index] == 'uniform':
 
-            priorParams = {
-                'mean': parameterFrame.PriorMean[index],
-                'half_width' : parameterFrame.PriorSecond[index]
-            }
+                prior_params = {
+                    'mean': parameter_frame.PriorMean[index],
+                    'half_width' : parameter_frame.PriorSecond[index]
+                }
 
-        elif parameterFrame.PriorFunction[index] == 'normal':
+            elif parameter_frame.PriorFunction[index] == 'normal':
 
-            priorParams = {
-                'mean' : parameterFrame.PriorMean[index],
-                'sigma' : parameterFrame.PriorSecond[index]
-            }
+                prior_params = {
+                    'mean' : parameter_frame.PriorMean[index],
+                    'sigma' : parameter_frame.PriorSecond[index]
+                }
 
-        theModel.parameters[name].set_variable(prior_function=priorFunc, prior_parameters=priorParams)
+            the_model.parameters[name].set_variable(prior_function=prior_func, prior_parameters=prior_params)
 
-    else:
-        print('*** STATUS FOR THE PARAMETER {} IS MISTYPED. CAN ONLY BE `fixed` or `variable`, \
-              not {} ***'.format(name, parameterFrame['name'][index]))
+        else:
+            print('*** STATUS FOR THE PARAMETER {} IS MISTYPED. CAN ONLY BE `fixed` or `variable`, \
+                  not {} ***'.format(name, parameter_frame['name'][index]))
 
-    # call the reset class method to complete the process of setting this parameter
-    theModel.parameters[name].reset()
+        # call the reset class method to complete the process of setting this parameter
+        the_model.parameters[name].reset()
 
-theModel.boot()
+    the_model.boot()
 
 '''
     get the start date assigned to the model; this is important for figuring out the start of the
@@ -131,90 +135,103 @@ theModel.boot()
 '''
 
 # set the default start and end dates to the mode t0 and a 28-day future projection as default values
-startDate = theModel.t0
-endDate = datetime.datetime.now().date() + datetime.timedelta(days=28)
+start_date = the_model.t0
+end_date = datetime.datetime.now().date() + datetime.timedelta(days=28)
 
 # the length of the simulation (in time steps)
-simLength = (endDate-startDate).days
+simulation_length = (end_date-start_date).days
 
-print("fitting step")
+print('data filtering step')
 
-# try to read case data brought in as a dependency
-realData = datasheet(myScenario, "epi_DataSummary")
+data_for_fitting = datasheet(myScenario, "epi_DataSummary").drop(columns=['DataSummaryID', 'TransformerID'])
+if data_for_fitting.empty:
+    print('\t*** WARNING: no fitting data given ***')
 
-# if there's case data available for fitting
-if not realData.empty:
+'''
+    some of the data sets have different age ranges and sexes. since the Optimizer object only takes a list of values, this structure
+    is lost, and all the function sees will be a time series 5000 timesteps deep. to avoid this, we run the data through a filtering
+    function that will
 
-    # change the timesteps frim string to datetime objects
-    realData.Timestep = realData.Timestep.apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
-    realData = realData[realData.Timestep >= startDate]
+    1) select the data for the same jurisdiction as the model
 
-    # this is the variable we want to fit the model to
-    fittingVar = modelChoices.FitVariable
+    2) select the currect age ranges and sexes. in cases where totals aren't given, the appropriate rows are summed for each timestep.
+        for example, Karlen's BC data breaks the population down completely into age groups and sexes, but gives no aggregates, so a
+        cumulative time series is created by either adding the data from each sex (total = male + female) or summing over the ages
+        given (total = 0->14 + 15->34 + 35->59 + ... + over 85, say).
 
-    # if data for the fitting variable chosen is available in the case data given, then proceed
-    if fittingVar in set(realData.Variable):
-        realData = realData[realData.Variable == fittingVar]
-    # if not, default to fitting the cumulative cases
-    else:
-        realData = realData[realData.Variable == 'Cases - Cumulative']
-        fittingVar = 'Cases - Cumulative'
+    3) choose the iteration giving the longest time series, should there be multiple iterations present in the data set
+'''
+filtered_data = headerFile.filter_the_data(
+    data_for_fitting,
+    THIS_MODEL,
+    model_choices.FitVariable,
+    LUTRow.Jurisdiction,
+    LUTRow.AgeRange
+)
+
+# we proceed with the filtered data
+if not filtered_data.empty:
+
+    print("fitting step\n")
+
+    filtered_data.Timestep = filtered_data.Timestep.apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d').date())
+    filtered_data = filtered_data[filtered_data.Timestep >= start_date]
 
     '''
         the only two time series that can be fit are 'reported' cases and 'infected' cases, either on a daily
         or cumulative basis. this chunk of code takes the four drop-down options given to the user and creates
         one of these four combinations
     '''
-    fittingString = ''
+    fitting_string = ''
 
-    if 'cumulative' in modelChoices.FitVariable.lower():
-        fittingString += 'total '
-    elif 'daily' in modelChoices.FitVariable.lower():
-        fittingString += 'daily '
+    if 'cumulative' in model_choices.FitVariable.lower():
+        fitting_string += 'total '
+    elif 'daily' in model_choices.FitVariable.lower():
+        fitting_string += 'daily '
 
-    if 'cases' in modelChoices.FitVariable.lower():
-        fittingString += 'reported'
-    elif 'infected' in modelChoices.FitVariable.lower():
-        fittingString += 'infected'
+    if 'cases' in model_choices.FitVariable.lower():
+        fitting_string += 'reported'
+    elif 'infected' in model_choices.FitVariable.lower():
+        fitting_string += 'infected'
 
-    cumulReset = True if modelChoices.CumulReset == True else False
+    cumulative_reset_from_zero = True if model_choices.CumulReset == True else False
 
     # days in the time series on which to start and end data fitting
-    startFitDay = 1 if numpy.isnan(modelChoices.StartFit) else int(modelChoices.StartFit)
-    endFitDay = realData.shape[0] if numpy.isnan(modelChoices.EndFit) else int(modelChoices.EndFit)
+    start_fitting_day = 1 if numpy.isnan(model_choices.StartFit) else int(model_choices.StartFit)
+    end_fitting_day = filtered_data.shape[0] if numpy.isnan(model_choices.EndFit) else int(model_choices.EndFit)
 
     # fitting using least squares (detailed by Karlen in the pypmca code)
     myOptimiser = Optimizer(
-        theModel,
-        fittingString,
-        realData.Value.values,
-        [startFitDay, endFitDay],
-        cumulReset,
-        str(modelChoices.SkipDatesText[0])
+        the_model,
+        fitting_string,
+        filtered_data.Value.values,
+        [start_fitting_day, end_fitting_day],
+        cumulative_reset_from_zero,
+        str(model_choices.SkipDatesText[0])
     )
     popt, pcov = myOptimiser.fit()
 
-    # fetch the names and values of the posteriors, reparametrise the model and write them to datasheet
-    fitVars = datasheet(myScenario, "modelKarlenPypm_FitVariables", empty=True)
+    # fetch the names and values of the posteriors, reparameterise the model and write them to datasheet
+    fitted_variables = datasheet(myScenario, "modelKarlenPypm_FitVariables", empty=True)
     for index in range(len(popt)):
         name = myOptimiser.variable_names[index]
         value = popt[index]
-        fitVars = fitVars.append({'Variable':name, 'Value':value}, ignore_index=True)
-        theModel.parameters[name].set_value(value)
+        fitted_variables = fitted_variables.append({'Variable':name, 'Value':value}, ignore_index=True)
+        the_model.parameters[name].set_value(value)
 
-    saveDatasheet(myScenario, fitVars, "modelKarlenPypm_FitVariables")
+    saveDatasheet(myScenario, fitted_variables, "modelKarlenPypm_FitVariables")
 
-# save the reparametrised model object in the Temp Directory
-modelFileName = '{}\\{}_fitted.pypm'.format(env.TempDirectory, theModel.name)
-theModel.save_file(modelFileName)
+# save the reparameterise model object in the Temp Directory
+model_file_name = '{}\\{}_fitted.pypm'.format(env.TempDirectory, the_model.name)
+the_model.save_file(model_file_name)
 
-# fill ain information table for the fitted model
-fittedModelFile = datasheet(myScenario, "modelKarlenPypm_FittedModelFile")
-fittedModelFile.File = [modelFileName]
-fittedModelFile.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
-fittedModelFile.ModelDescrip = [THIS_MODEL]
-fittedModelFile.Crosswalk = [modelChoices.CrosswalkFile]
-saveDatasheet(myScenario, fittedModelFile, "modelKarlenPypm_FittedModelFile")
+# fill in information table for the fitted model
+fitted_model_file = datasheet(myScenario, "modelKarlenPypm_FittedModelFile")
+fitted_model_file.File = [model_file_name]
+fitted_model_file.DateTime = [datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')]
+fitted_model_file.ModelDescrip = [THIS_MODEL]
+fitted_model_file.Crosswalk = [model_choices.CrosswalkFile]
+saveDatasheet(myScenario, fitted_model_file, "modelKarlenPypm_FittedModelFile")
 
 print("getting the expectations")
 
@@ -224,23 +241,23 @@ print("getting the expectations")
 '''
 
 # this is the list of populations requested by the user
-populationTable = datasheet(myScenario, "modelKarlenPypm_PopulationSelectionTable")
-showThesePops = list(populationTable.ShowThese.drop_duplicates())
+population_table = datasheet(myScenario, "modelKarlenPypm_PopulationSelectionTable")
+show_these_pops = list(population_table.ShowThese.drop_duplicates())
 
-# if a corrected crosswalk fine has been supoplied by the user, use that. else, default to the project datasheet
-if modelChoices.isnull().CrosswalkFile:
+# if a corrected crosswalk fine has been supplied by the user, use that. else, default to the project datasheet
+if model_choices.isnull().CrosswalkFile:
     pypmcaCrosswalk = datasheet(myScenario, "modelKarlenPypm_PypmcaCrosswalk")
 else:
-    crosssWalk = pandas.read_csv(modelChoices.CrosswalkFile)
+    crosssWalk = pandas.read_csv(model_choices.CrosswalkFile)
 
-# lookup function : Karlen model name -> sism standard variable name
-def standardName(pop):
+# lookup function : Karlen model name -> Ssim standard variable name
+def standard_Ssim_name(pop):
     if pop in list(pypmcaCrosswalk.Stock):
         return pypmcaCrosswalk[pypmcaCrosswalk.Stock == pop].Standard.iloc[0]
     else:
         return None
 
-# inverse lookup function : ssim standard variable name -> Karlen model name
+# inverse lookup function : Ssim standard variable name -> Karlen model name
 def stockName(pop):
     if pop in list(pypmcaCrosswalk.Standard):
         return pypmcaCrosswalk[pypmcaCrosswalk.Standard == pop].Stock.iloc[0]
@@ -251,25 +268,25 @@ def stockName(pop):
 def standardError(variable):
     return '*** ERROR: requested population {} has no equivalent \
         in the Pypmca model object. Please verify either the \
-        crosswalk file used or the standardising funtion \
+        crosswalk file used or the standardising function \
         "getFancyName" in <headerFile.py> ***'.format(variable)
 
-# reset the model to initial values (set previously) and get the expectations for the reguired time
-theModel.reset()
-theModel.evolve_expectations(simLength)
+# reset the model to initial values (set previously) and get the expectations for the required time
+the_model.reset()
+the_model.evolve_expectations(simulation_length)
 
 # data frame to hold all the time series for the variables requested
-expectationsTable = pandas.DataFrame()
+expectations_table = pandas.DataFrame()
 
 # for each variable
-for standardName in showThesePops:
+for standard_Ssim_name in show_these_pops:
 
     # get the Karlen model equivalent of the name
-    karlenName = stockName(standardName)
+    karlen_population_name = stockName(standard_Ssim_name)
 
     # if there's a time series corresponding to the Karlen name, fetch it
-    if karlenName in theModel.populations.keys():
-        timeSeries = theModel.populations[karlenName].history
+    if karlen_population_name in the_model.populations.keys():
+        time_series = the_model.populations[karlen_population_name].history
 
     else:
 
@@ -280,58 +297,58 @@ for standardName in showThesePops:
         '''
 
         # if there's no daily variable but a corresponding cumulative variable
-        if 'daily' in karlenName:
+        if 'daily' in karlen_population_name:
 
             # get the base name of the cumulative variable
-            karlenStub = karlenName.replace('daily', '').strip()
+            karlen_stub = karlen_population_name.replace('daily', '').strip()
 
             # if there's no population of that name, then there may be a problem with the crosswalk file
-            if karlenStub not in theModel.populations.keys():
-                print(standardError(karlenName))
+            if karlen_stub not in the_model.populations.keys():
+                print(standardError(karlen_population_name))
                 continue
 
             # if the cumulative equivalent is found, make a daily version with a diff function
-            timeSeries = headerFile.delta(theModel.populations[karlenStub].history)
+            time_series = headerFile.delta(the_model.populations[karlen_stub].history)
 
         # else, if the daily version exists and we want the cumulative
-        elif 'cumulative' in karlenName:
+        elif 'cumulative' in karlen_population_name:
 
             # get the name of the corresponding daily variable
-            karlenStub = karlenName.replace('daily', '').strip()
+            karlen_stub = karlen_population_name.replace('daily', '').strip()
 
-            # if this isn't dounf, there may be a problem with teh crosswalk file
-            if karlenStub not in theModel.populations.keys():
-                print(standardError(karlenName))
+            # if this isn't found, there may be a problem with the crosswalk file
+            if karlen_stub not in the_model.populations.keys():
+                print(standardError(karlen_population_name))
                 continue
 
             # create the cumulative series by the cumsum function
-            timeSeries = numpy.cumsum(theModel.populations[karlenStub].history)
+            time_series = numpy.cumsum(the_model.populations[karlen_stub].history)
 
     # if at least 10% of the values in the time series are unique, add the time series to the table
-    if headerFile.movementThreshold(timeSeries, 0.1):
-        expectationsTable[ standardName ] = timeSeries
+    if headerFile.movementThreshold(time_series, 0.1):
+        expectations_table[ standard_Ssim_name ] = time_series
 
 print("expectations done")
 
 # add a time column to the time series table
-expectationsTable['Timestep'] = [startDate+datetime.timedelta(days=x) for x in range(expectationsTable.shape[0])]
+expectations_table['Timestep'] = [start_date+datetime.timedelta(days=x) for x in range(expectations_table.shape[0])]
 
 # melt the table to get unique Timestep|Variable rows
-epiDatasummary = pandas.melt(expectationsTable, id_vars=["Timestep"])
+epiDatasummary = pandas.melt(expectations_table, id_vars=["Timestep"])
 # fix the column headers to title case
 epiDatasummary.columns = map(headerFile.camelify, epiDatasummary.columns)
-# add the jurisdiction and trandformer ID
+# add the jurisdiction and transformer ID
 epiDatasummary['Jurisdiction'] = '{} - {}'.format(LUTRow.Country, LUTRow.Region)
 epiDatasummary['TransformerID'] = 'modelKarlenPypm_B_getExpectations'
 
 # write only the missing variable names to epi_Variable, adding the corresponding descriptions from the Crosswalk lut
 epiVariable = datasheet(myScenario, "epi_Variable")
-varList = epiDatasummary.Variable.drop_duplicates()
-descripList = map(
+variable_list = epiDatasummary.Variable.drop_duplicates()
+descriptions_list = map(
     lambda x: pypmcaCrosswalk[pypmcaCrosswalk.Standard == x].Description.iloc[0],
-    varList
+    variable_list
 )
-variablesHere = pandas.DataFrame({'Name' : varList, 'Description' : descripList})
+variablesHere = pandas.DataFrame({'Name' : variable_list, 'Description' : descriptions_list})
 saveDatasheet(myScenario, variablesHere[~variablesHere.Name.isin(epiVariable.Name)], "epi_Variable")
 
 # add the current model jurisdiction only if it's not already included (the case if the transformer is run without data and fitting, possible)

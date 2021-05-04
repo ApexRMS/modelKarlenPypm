@@ -244,8 +244,6 @@
     						<column name="InputID" dataType="Integer" isPrimary="True"/>
     						<column name="ScenarioID" dataType="Integer"/>
     						<column name="DataSet" dataType="Integer" validationType="Datasheet" formula1="DataDropdown" allowDbNull="False" displayName="Jurisdiction"/>
-                <column name="Age" dataType="Boolean"/>
-    						<column name="Sex" dataType="Boolean"/>
                 <column name="CrosswalkFile" dataType="String" isExternalFile="True"/>
     					</columns>
     				</datasheet>

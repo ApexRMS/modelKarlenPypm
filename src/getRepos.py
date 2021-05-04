@@ -382,14 +382,6 @@ for karlen_country_name in karlens_sources.keys():
     '''
     fancy_country_name = karlen_country_name
 
-    # hard-coded for simplicity, in line with KISS. more can be added later, in the case that he changes the names
-    if fancy_country_name == 'Germany_age':
-        fancy_country_name = 'Germany'
-    elif fancy_country_name == 'California':
-        fancy_country_name = 'USA - California'
-    elif fancy_country_name == 'BC':
-        fancy_country_name = 'Canada - British Columbia'
-
     # progress message
     print('\n{}'.format(fancy_country_name))
 
@@ -402,6 +394,10 @@ for karlen_country_name in karlens_sources.keys():
         # retrieves any age information in the karlen_region_name name (ex. "<10", "30-39", "under 40", etc)
         age_range_dict = headerFile.ageRangeString(karlen_region_name)
 
+        print(fancy_region_name)
+
+        ### GERMANY_AGE
+
         if karlen_country_name == 'Germany_age':
 
             '''
@@ -413,17 +409,40 @@ for karlen_country_name in karlens_sources.keys():
                 then that's just Germany total, so fancy_region_name is set to None.
             '''
 
+            fancy_country_name = 'Germany'
+
             # for this data set, get the coded karlen_region_name name and age class
             code = karlen_region_name.split('_')[0]
             # 'de' is the ISO 3166 code for Germany, so this is country-level data rather that regional
             if code == 'de':
                 fancy_region_name = None
+
             else:
                 # if valid ISO 3166-2 code, do pycountry lookup to find the region information
                 py_subdivision = pycountry.subdivisions.get(code='DE-{}'.format(code.upper()))
                 # get the fancy name of the region (includes diacritics)
                 fancy_region_name = py_subdivision.name
-                print(fancy_region_name)
+
+            # fancy_data_source_name is the name the user will see in drop-downs. for example, "Canada - British Columbia", "Germany"
+            if fancy_region_name == None:
+                fancy_data_source_name = fancy_country_name
+            else:
+                # if there is a fancy region name, paste it. for example, "Canada - British Columbia - Fraser", "Germany - Nordrhein-Westfalen"
+                # change all the dashes to underscores, since dashes generate a tree view ('Nordrhein-Westfalen' -> 'Nordrhein_Westfalen')
+                # since Westfalen isn't a subregion of North Rhine, as it would appear when charting
+                fancy_data_source_name = '{} - {}'.format(fancy_country_name, fancy_region_name.replace('-', '_'))
+
+            all_data_sources = all_data_sources.append({
+                'LUT' : fancy_data_source_name,
+                'Country' :karlen_country_name,
+                'Region' : karlen_region_name,
+                'FancyCountry' : fancy_country_name,
+                'FancyRegion' : fancy_region_name
+            }, ignore_index=True)
+
+            continue
+
+        ### GERMANY
 
         elif karlen_country_name == 'Germany':
 
@@ -436,77 +455,99 @@ for karlen_country_name in karlens_sources.keys():
 
             fancy_region_name = headerFile.germanStateName(karlen_region_name)
 
-        # end if
+        ### BRAZIL
 
-        '''
-            if fancy_region_name is set to None, this means that the karlen_region_name name contained only age/sex information and will not be used, since
-            the subregion name must be given in the karlen_country_name variable in that case. for example, the descriptions
+        elif karlen_country_name == 'Brazil':
 
-                "karlen_country_name - BC, karlen_region_name - Male"
-                "karlen_country_name - BC, karlen_region_name - Unknown"
-                "karlen_country_name - BC, karlen_region_name - 20-50"
+            # Karlen has preceded the Brazilian states by their ISO 3166-2 code, so "TO: Tocantins" becomes "Tocantins"
+            fancy_region_name = fancy_region_name.split(':')[-1].strip()
 
-            will all get the fancy_region_name None, so that the fancy name of the regions would be multiple copies of "Canada - British Columbia"
-            (the karlen_country_name variable gave us the name of the state/province, and it's easy to find the country)
-        '''
+        ### UK
 
-        # if the region variable gives gender information, set the fancy_region_name to None
-        if fancy_region_name in ['All', 'Male', 'Female']:
-            fancy_region_name = None
+        elif karlen_country_name == 'UK':
 
-        # sometimes country-level data will be denoted "Israel - Israel", for example
-        if fancy_region_name == fancy_country_name:
-            fancy_region_name = None
+            # no gotchas with the names
+            pass
 
-        # EU is not a country, so set the fancy_country_name as the region name and mark the fancy_region_name as being None
+        ### EU
+
         elif karlen_country_name == 'EU':
+
+            ''' EU is not a country, so set the fancy_country_name as the region name and mark the fancy_region_name as being None '''
+
             fancy_country_name = fancy_region_name
             fancy_region_name = None
 
-        # hard-coded Canadian provinces
-        elif fancy_region_name == 'BC':
-            fancy_region_name = 'British Columbia'
-        elif fancy_region_name == 'NWT':
-            fancy_region_name = 'Northwest Territories'
-        elif fancy_region_name == 'PEI':
-            fancy_region_name = 'Prince Edward Island'
+        ### CANADA
 
-        # Karlen has preceded the Brazilian states by their ISO 3166-2 code, so "TO: Tocantins" becomes "Tocantins"
-        elif (fancy_region_name != None) and (':' in fancy_region_name):
-            fancy_region_name = fancy_region_name.split(':')[-1].strip()
+        elif karlen_country_name == 'Canada':
 
-        # if the karlen_region_name is a description of the age range of the data, set fancy_region_name to None to avoid pasting it in the fancy jurisdiction name
-        else:
-            # if there's age information in karlen_region_name, then set the fancy_region_name
-            if len(age_range_dict) and fancy_region_name!= None:
-                fancy_region_name = None
+            # hard-coded Canadian provinces
+            if fancy_region_name == 'BC':
+                fancy_region_name = 'British Columbia'
+            elif fancy_region_name == 'NWT':
+                fancy_region_name = 'Northwest Territories'
+            elif fancy_region_name == 'PEI':
+                fancy_region_name = 'Prince Edward Island'
 
-        #end if
+        elif karlen_country_name == 'BC':
 
-        # if there is a fancy region name, print it to demonstrate progress
-        if fancy_region_name != None:
-            print('\t{}'.format(fancy_region_name))
+            '''
+                if fancy_region_name contains age/sex information and will not be used, and set to None. for example, the descriptions
 
-        # fancy_data_source_name is the name the user will see in drop-downs. for example, "Canada - British Columbia", "Germany"
+                    "karlen_country_name - BC, karlen_region_name - Male"
+                    "karlen_country_name - BC, karlen_region_name - Unknown"
+                    "karlen_country_name - BC, karlen_region_name - 20-50"
+
+                will all get the fancy_region_name None, so that the fancy name of the regions would be multiple copies of "Canada - British Columbia"
+                (the karlen_country_name variable gave us the name of the state/province, and it's easy to find the country)
+            '''
+
+            fancy_country_name = 'Canada - British Columbia'
+
+        ### ISRAEL
+
+        elif karlen_country_name == 'Israel':
+
+            # no gotchas with the names
+            pass
+
+        ### USA
+
+        elif karlen_country_name == 'USA':
+
+            # no gotchas with the names
+            pass
+
+        elif karlen_country_name == 'California':
+
+            fancy_country_name = 'USA - California'
+
+        # end country if statements
+
+
+        # if the region variable gives only age information
+        if set(age_range_dict.values()) != {None}:
+              fancy_region_name = None
+        # if the region variable gives gender information, set the fancy_region_name to None
+        elif fancy_region_name in ['All', 'Male', 'Female', 'Unknown']:
+            fancy_region_name = None
+
         if fancy_region_name == None:
             fancy_data_source_name = fancy_country_name
-         # if there is a fancy region name, paste it. for example, "Canada - British Columbia - Fraser", "Germany - Nordrhein-Westfalen"
         else:
-
-            # change all the dashes to underscores, since dashes generate a tree view ('Nordrhein-Westfalen' -> 'Nordrhein_Westfalen')
-            # since Westfalen isn't a subregion of North Rhine, as it would appear when charting
             fancy_data_source_name = '{} - {}'.format(fancy_country_name, fancy_region_name.replace('-', '_'))
 
-        # end if
 
         '''
-            these regions may be repeated. since the Region column is supposed to have unique entries (project-level datasheets can't have duplicate
-            value members), just tack on the country name and remove it in the getData transformer
+            this is done to make sure that the regions are unique. Karlen has two regions each with the names "All" (BC and Israel),
+                "Germany" (Germany and Germany_age) and "Unknown". since the combination of country and region is unique, we just tack
+                the country name to the end, and remove it in the getData transformer.
         '''
         if karlen_region_name in ['Germany', 'All', 'Unknown']:
             karlen_region_name = '{} {}'.format(karlen_region_name, karlen_country_name)
 
-        # finally, write to the table
+        # write to the output table
         all_data_sources = all_data_sources.append({
             'LUT' : fancy_data_source_name,
             'Country' :karlen_country_name,
@@ -514,6 +555,9 @@ for karlen_country_name in karlens_sources.keys():
             'FancyCountry' : fancy_country_name,
             'FancyRegion' : fancy_region_name
         }, ignore_index=True)
+
+# a line to display the entire table
+with pandas.option_context('display.max_rows', None, 'display.max_columns', None): print(all_data_sources)
 
 # add the complete list of models (duplicates included) to a visible datasheet
 pypmcaData = datasheet(myScenario, "modelKarlenPypm_PypmcaData").drop(columns=['PypmcaDataID'])
@@ -529,3 +573,4 @@ dropdown = datasheet(myScenario, "modelKarlenPypm_DataDropdown").drop(columns=['
 dataAvail = dataAvail[-dataAvail.Name.isin(dropdown.Name)]
 if not dataAvail.empty:
     saveDatasheet(myScenario, dataAvail, "modelKarlenPypm_DataDropdown")
+

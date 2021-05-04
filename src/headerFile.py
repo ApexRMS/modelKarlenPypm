@@ -142,7 +142,7 @@ def germanStateName(state_name:str):
         return german_state_LUT[state_name].replace('-', '_')
 
 	# the other of the 16 states
-    otherStates = ['Schleswig-Holstein', 'Hamburg', 'Bremen', 'Brandenburg', 'Berlin', 'Saarland']
+    otherStates = ['Schleswig-Holstein', 'Hamburg', 'Bremen', 'Brandenburg', 'Berlin', 'Saarland'] + list(german_state_LUT.values())
 
 	# if it's one of the German states that doesn't need to be translated, return the input
     if state_name in otherStates:
@@ -282,7 +282,7 @@ def ageRangeString(the_string:str):
 
 	# no information if there are no numbers in the string
     if not re.search('\d', the_string):
-        return {}
+        return {'lower': None, 'upper': None}
 
 	# convert to lower case for less cases during parsing
     the_string = the_string.lower()
@@ -380,9 +380,6 @@ def ageRangeModel(model_name:str):
     first_string_fragment = model_name.split('_')[0]
 
     age_band_dict = ageRangeString(first_string_fragment)
-
-    if age_band_dict == {}:
-        return ''
 
     if set(age_band_dict.values()) == {None}:
         return ''
@@ -524,3 +521,129 @@ def regionInfo(country_name:str, model_name:str):
             fancy_region_name = 'British Columbia - {}'.format( lut[ string_fragment_list[0] ].title() )
 
     return {'code' : iso_3166_code, 'name' : fancy_region_name}
+
+
+'''
+    some of the data sets have different age ranges and sexes. since the Optimizer object only takes a list of values, this structure
+    is lost, and all the function sees will be a time series 5000 timesteps deep. to avoid this, we run the data through a filtering
+    function that will
+
+    1) select the data for the same jurisdiction as the model
+
+    2) select the currect age ranges and sexes. in cases where totals aren't given, the appropriate rows are summed for each timestep.
+        for example, Karlen's BC data breaks the population down completely into age groups and sexes, but gives no aggregates, so a
+        cumulative time series is created by either adding the data from each sex (total = male + female) or summing over the ages
+        given (total = 0->14 + 15->34 + 35->59 + ... + over 85, say).
+
+    3) choose the iteration giving the longest time series, should there be multiple iterations present in the data set
+
+    function used in the getData transformer
+
+'''
+
+def filter_the_data(real_data:pandas.DataFrame, model_name:str, fitting_variable:str, jurisdiction:str, age_range:str):
+
+    # preventing errors with running an empty table
+    if real_data.empty:
+        return real_data
+
+    # NAs pose a problem with the .groupby() operation, so add a nonsense value as a placeholder
+    real_data.Iteration = real_data.Iteration.fillna(-1).astype(int)
+
+    # select a jurisdiction, should multiple be present (ideally the same as the model, given that we aren't given the entire LUT)
+    real_data = real_data[real_data.Jurisdiction == jurisdiction]
+
+    if real_data.empty:
+        print('*** ERROR: fitting data imported has no data for the model jurisdiction ***')
+        return real_data
+
+    # if data for the fitting variable chosen is available in the case data given, then proceed
+    if fitting_variable in set(real_data.Variable):
+        real_data = real_data[real_data.Variable == fitting_variable]
+    # if not, default to fitting the cumulative cases
+    else:
+        real_data = real_data[real_data.Variable == 'Cases - Cumulative']
+        fitting_variable = 'Cases - Cumulative'
+
+    if real_data.empty:
+        print('*** ERROR: fitting data imported does not contain data for reported cases or infection.\
+              try importing another dataset ***')
+        return real_data
+
+    # remove all-NA columns, again because of groupby()
+    real_data = real_data.dropna(axis=1, how='all')
+
+    # get the necessary age range of the data
+    model_age_band = ageRangeString(age_range)
+
+    # if, after deleting all-NA rows, there's still age information
+    if ('AgeMin' in real_data.columns) and ('AgeMax' in real_data.columns):
+
+        # if no age-stratified data is required for this model
+        if model_age_band == {'lower': None, 'upper': None}:
+
+            # see if aggregate data is available
+            temp_data = real_data[real_data.AgeMin.isnull() & real_data.AgeMax.isnull()]
+
+            # if aggregates are not given (maybe summing over each available sex)
+            if temp_data.empty:
+                # create a total be addingthe  values of all the age groups per time step
+                grouping_columns = [col for col in real_data.columns if col not in ['AgeMin', 'AgeMax', 'Value']]
+                temp_data = real_data[grouping_columns].drop_duplicates()
+                temp_data['Value'] = real_data.groupby(grouping_columns)['Value'].sum().values
+
+            # reassign the data for output
+            real_data = temp_data
+
+        else:
+            # if age data is required, take it if it's available
+
+            if model_age_band['lower'] == None:
+                real_data = real_data[real_data.AgeMin.isnull()]
+            else:
+                real_data = real_data[real_data.AgeMin == model_age_band['lower']]
+
+            if(model_age_band['upper'] == None):
+                real_data = real_data[real_data.AgeMax.isnull()]
+            else:
+                real_data = real_data[real_data.AgeMax == model_age_band['upper']]
+
+            if real_data.empty:
+
+                print('*** ERROR: data not found for the age range required by the model ***')
+                return real_data
+
+
+    real_data = real_data.dropna(axis=1, how='all')
+
+    # if there's sex stratification in the dataset
+    if 'Sex' in real_data.columns:
+
+        # see if sex is required for the model
+
+        if re.findall('boy|man|male', model_name):
+            real_data = real_data[real_data.Sex == 'Male']
+
+        elif re.findall('girl|woman|female', model_name):
+            real_data = real_data[real_data.Sex == 'Female']
+
+        else:
+            # see if aggreates are available (maybe summing over each age group)
+            temp_data = real_data[real_data.Sex.isnull()]
+
+            # if not
+            if temp_data.empty:
+                # get total numbers by adding the sexes together each timestep
+                grouping_columns = [col for col in real_data.columns if col not in ['Sex', 'Value']]
+                temp_data = real_data[grouping_columns].drop_duplicates()
+                temp_data['Value'] = real_data.groupby(grouping_columns)['Value'].sum().values
+
+            real_data = temp_data
+
+    # choose the iteration giving the longest time series for return
+    real_data = real_data[real_data.Iteration == real_data.Iteration.mode().iloc[0]]
+
+    if real_data.empty:
+            print('*** ERROR: fitting data empty after filtering. try importing another dataset ***')
+
+    return real_data

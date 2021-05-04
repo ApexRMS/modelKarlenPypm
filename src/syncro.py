@@ -123,7 +123,7 @@ def saveDatasheet(theScenario:scenario, dataSheet:pandas.core.frame.DataFrame, d
         print("ERROR: no table by that name")
         return None
     elif dataSheet.empty:
-        print("ERROR: empty data sheet")
+        print("WARNING: empty data sheet")
         return None
 
     tempDir = tempfile.mkdtemp()
