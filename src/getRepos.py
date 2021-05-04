@@ -5,11 +5,12 @@ for i in list(globals().keys()):
         exec('del {}'.format(i))
 
 import requests
-import collections
+#import collections
 import datetime
 import pycountry
+import pandas
 
-import sys
+#import sys
 
 ''' uncomment and insert these two lines into the code to halt execution at a certain point without exiting the interpreter '''
 # sys.tracebacklimit = 1
