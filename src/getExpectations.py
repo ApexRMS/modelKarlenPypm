@@ -134,12 +134,7 @@ if not parameter_frame.empty:
     time series to fit to and any data we want to overlay in a chart for comparison
 '''
 
-# set the default start and end dates to the mode t0 and a 28-day future projection as default values
-start_date = the_model.t0
-end_date = datetime.datetime.now().date() + datetime.timedelta(days=28)
 
-# the length of the simulation (in time steps)
-simulation_length = (end_date-start_date).days
 
 print('data filtering step')
 
@@ -169,6 +164,28 @@ filtered_data = headerFile.filter_the_data(
     LUTRow.AgeRange
 )
 
+# set the default fit start, projection start date and end dates to the mode t0 and a 28-day future projection as default values
+# Fit start date
+try:
+    start_date = datetime.datetime.strptime(model_choices.StartFit, '%Y-%m-%d').date()
+except:
+    start_date = the_model.t0
+    
+# Projection start date
+try:
+    projection_start_date = datetime.datetime.strptime(model_choices.EndFit, '%Y-%m-%d').date()
+except:
+    projection_start_date = datetime.datetime.now().date() if filtered_data.empty else datetime.datetime.strptime(filtered_data.Timestep.iloc[-1], '%Y-%m-%d').date()
+    
+# Projection end date
+try:
+    end_date = projection_start_date + datetime.timedelta(days=model_choices.EndDate.item())
+except:
+    end_date = projection_start_date + datetime.timedelta(days=model_choices.EndDate.item())
+
+# the length of the simulation (in time steps)
+simulation_length = (end_date-start_date).days
+
 # we proceed with the filtered data
 if not filtered_data.empty:
 
@@ -197,8 +214,8 @@ if not filtered_data.empty:
     cumulative_reset_from_zero = True if model_choices.CumulReset == True else False
 
     # days in the time series on which to start and end data fitting
-    start_fitting_day = 1 if numpy.isnan(model_choices.StartFit) else int(model_choices.StartFit)
-    end_fitting_day = filtered_data.shape[0] if numpy.isnan(model_choices.EndFit) else int(model_choices.EndFit)
+    start_fitting_day = 1 # since the data is already filtered by start_date
+    end_fitting_day = min(filtered_data.shape[0], (projection_start_date - start_date).days + 1)
 
     # fitting using least squares (detailed by Karlen in the pypmca code)
     myOptimiser = Optimizer(
@@ -338,7 +355,7 @@ epiDatasummary = pandas.melt(expectations_table, id_vars=["Timestep"])
 # fix the column headers to title case
 epiDatasummary.columns = map(headerFile.camelify, epiDatasummary.columns)
 # add the jurisdiction and transformer ID
-epiDatasummary['Jurisdiction'] = '{} - {}'.format(LUTRow.Country, LUTRow.Region)
+epiDatasummary['Jurisdiction'] = '{} - {}'.format(LUTRow.Country, LUTRow.Region.replace('_', '-'))
 epiDatasummary['TransformerID'] = 'modelKarlenPypm_B_getExpectations'
 
 # write only the missing variable names to epi_Variable, adding the corresponding descriptions from the Crosswalk lut

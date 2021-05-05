@@ -122,19 +122,19 @@
       programArguments="getExpectations.py"
       isRunnable ="True">
       <datafeeds>
-        <datafeed name="ModelChoices" displayName="Model Options" dataScope="Scenario">
+        <datafeed name="ModelChoices" displayName="Run Settings" dataScope="Scenario">
           <datasheets>
-            <datasheet name="ModelChoices" displayName="Model Options" isSingleRow="True">
+            <datasheet name="ModelChoices" displayName="Run Settings" isSingleRow="True">
               <columns>
                 <column name="ModelChoicesID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer"/>
-                <column name="ModelName" dataType="Integer" validationType="Datasheet" formula1="PypmcaModels" allowDbNull="False" displayname="Model"/>
-                <column name="CrosswalkFile" dataType="String" displayName="Crosswalk File (Optional)" isExternalFile="True"/>
-                <column name="StartFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Day To Start Fitting:"/>
-                <column name="EndFit" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Day To End Fitting:"/>
+                <column name="ModelName" dataType="Integer" validationType="Datasheet" formula1="PypmcaModels" allowDbNull="False" displayname="Model:"/>
+                <column name="StartFit" dataType="Date" displayName="Fit start date (yyyy-mm-dd):"/>
+                <column name="EndFit" dataType="Date" displayName="Projection start date (yyyy-mm-dd):"/>
+                <column name="EndDate" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" displayName="Number of days to forecast:"/>
+		            <column name="CrosswalkFile" dataType="String" displayName="Crosswalk File (Optional):" isExternalFile="True"/>
                 <column name="CumulReset" dataType="Boolean" displayName="Reset Cumulative to Zero:"/>
                 <column name="SkipDatesText" dataType="String" displayName="Days to Skip:"/>
-                <column name="EndDate" dataType="Date" displayName="End of Projection"/>
                 <column name="FitVariable"
                   dataType="Integer"
                   validationType="List"
@@ -145,7 +145,7 @@
                   displayName="Variable To Fit:"/>
               </columns>
               <defaultRecords>
-                <record columns="FitVariable|StartFit|SkipDatesText" values="1|37|147,45:47"/>
+                <record columns="FitVariable|EndDate|SkipDatesText|CumulReset" values="1|28|147,45:47|0"/>
               </defaultRecords>
             </datasheet>
           </datasheets>
@@ -206,9 +206,9 @@
       programArguments="getIterations.py"
       isRunnable ="True">
       <datafeeds>
-        <datafeed name="RunControl" displayName="Run Control" dataScope="Scenario">
+        <datafeed name="RunControl" displayName="Run Settings" dataScope="Scenario">
           <datasheets>
-            <datasheet name="RunControl" displayName="Run Control" isSingleRow="True">
+            <datasheet name="RunControl" displayName="Run Settings" isSingleRow="True">
               <columns>
                 <column name="RunControlID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer"/>
@@ -244,8 +244,12 @@
     						<column name="InputID" dataType="Integer" isPrimary="True"/>
     						<column name="ScenarioID" dataType="Integer"/>
     						<column name="DataSet" dataType="Integer" validationType="Datasheet" formula1="DataDropdown" allowDbNull="False" displayName="Jurisdiction"/>
+                <column name="DisaggregateSex" dataType="Boolean" displayName="Disaggregate by Sex:"/>
                 <column name="CrosswalkFile" dataType="String" isExternalFile="True"/>
     					</columns>
+              <defaultRecords>
+                <record columns="DisaggregateSex" values="0"/>
+              </defaultRecords>
     				</datasheet>
     			</datasheets>
     		</datafeed>
@@ -280,7 +284,7 @@
     <layout name="coreforms_ScenarioDatafeeds">
       <group name="PypmcaSources" displayName="Pypmca Sources" appendTo="epi_Sources">
         <item name="CrosswalkFile" itemTransformer="getRepos" showIf="isResult"/>
-        <item name="ParameterValues" itemTransformer="getRepos" showif="isResult"/>
+        <item name="ParameterValues" itemTransformer="getRepos" showIf="isResult"/>
         <item name="DataChoices" displayName="Download Settings" itemTransformer="getData" showIf="isEither"/>
         <group name="Results" displayName="Download Results">
           <item name="DataFileOut" displayName="Raw Data" itemTransformer="getData" showIf="isResult"/>
@@ -311,9 +315,9 @@
             itemTransformer="getExpectations"/>
         </group>
         <group name="Simulations" appendTo="PypmcaModels">
+          <item name="RunControl" filterTransformer="getIterations" itemTransformer="getIterations" showIf="isParent"/>
           <item name="PopulationSelectionTable" filterTransformer="getIterations" itemTransformer="getIterations" showIf="isEither"/>
           <item name="FittedModelFile" filterTransformer="getIterations" itemTransformer="getIterations" showIf="isParent"/>
-          <item name="RunControl" filterTransformer="getIterations" itemTransformer="getIterations" showIf="isParent"/>
           <item
             name="epi_DataSummary"
             displayName="Simulations"

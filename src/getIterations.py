@@ -104,7 +104,7 @@ for iter in range(int(runControl.Iterations)):
             tempTable[ standardName ] = timeSeries
 
     tempTable['Iteration'] = str(iter+1)
-    tempTable['Timestep'] = [startDate+datetime.timedelta(days=x) for x in range(tempTable.shape[0])]
+    tempTable['Timestep'] = [startDate + datetime.timedelta(days=x) for x in range(tempTable.shape[0])]
 
     meltedTable = pandas.melt(tempTable, id_vars=["Timestep", "Iteration"])
     simSummaryDict[str(iter)] = meltedTable

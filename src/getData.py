@@ -278,4 +278,7 @@ addThisDict = pandas.DataFrame.from_dict(weNeedToAdd, orient='index')
 if not addThisDict.empty:
     saveDatasheet(myScenario, addThisDict.drop_duplicates(), "epi_Variable")
 
+if data_choices.DisaggregateSex == 'No':
+    total_data = total_data[total_data.Sex.isna()]
+
 saveDatasheet(myScenario, total_data, "epi_DataSummary")
