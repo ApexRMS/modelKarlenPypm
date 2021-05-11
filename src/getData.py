@@ -278,6 +278,9 @@ addThisDict = pandas.DataFrame.from_dict(weNeedToAdd, orient='index')
 if not addThisDict.empty:
     saveDatasheet(myScenario, addThisDict.drop_duplicates(), "epi_Variable")
 
+if 'Sex' not in total_data:
+    total_data['Sex'] = numpy.nan
+
 if data_choices.DisaggregateSex == 'No':
     total_data = total_data[total_data.Sex.isna()]
 
