@@ -5,7 +5,7 @@
       name="getRepos"
       isPrimary="True"
       displayName="modelKarlenPypm_A_getRepos"
-      programName="spyder"
+      programName="python"
       programArguments="getRepos.py"
       isRunnable ="True">
       <datafeeds>
@@ -118,7 +118,7 @@
     <transformer
       name="getExpectations"
       displayName="modelKarlenPypm_B_getExpectations"
-      programName="spyder"
+      programName="python"
       programArguments="getExpectations.py"
       isRunnable ="True">
       <datafeeds>
@@ -202,7 +202,7 @@
     <transformer
       name="getIterations"
       displayName="modelKarlenPypm_C_getIterations"
-      programName="spyder"
+      programName="python"
       programArguments="getIterations.py"
       isRunnable ="True">
       <datafeeds>
@@ -233,7 +233,7 @@
     <transformer
     	name="getData"
     	displayName="modelKarlenPypm_D_getData"
-    	programName="spyder"
+    	programName="python"
     	programArguments="getData.py"
     	isRunnable ="True">
     	<datafeeds>
