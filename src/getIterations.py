@@ -127,5 +127,6 @@ if LUTRow.Jurisdiction not in epiJurisdiction.Name:
 epiDatasummary = datasheet(myScenario, "epi_DataSummary").drop(columns=['DataSummaryID']).append(epiDatasummary)
 epiDatasummary.AgeMin = epiDatasummary.AgeMin.astype(pandas.Int64Dtype())
 epiDatasummary.AgeMax = epiDatasummary.AgeMax.astype(pandas.Int64Dtype())
+epiDatasummary.Iteration = numpy.floor(pandas.to_numeric(epiDatasummary.Iteration)).astype('Int64')
 
 saveDatasheet(myScenario, epiDatasummary, "epi_DataSummary")

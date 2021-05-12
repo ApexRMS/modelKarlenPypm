@@ -357,6 +357,7 @@ epiDatasummary.columns = map(headerFile.camelify, epiDatasummary.columns)
 # add the jurisdiction and transformer ID
 epiDatasummary['Jurisdiction'] = '{} - {}'.format(LUTRow.Country, LUTRow.Region.replace('_', '-'))
 epiDatasummary['TransformerID'] = 'modelKarlenPypm_B_getExpectations'
+epiDatasummary['Iteration'] = 1
 
 # write only the missing variable names to epi_Variable, adding the corresponding descriptions from the Crosswalk lut
 epiVariable = datasheet(myScenario, "epi_Variable")
@@ -381,6 +382,7 @@ if LUTRow.Jurisdiction not in list(epiJurisdiction.Name):
 epiDatasummary = datasheet(myScenario, "epi_DataSummary").drop(columns=['DataSummaryID']).append(epiDatasummary)
 epiDatasummary.AgeMin = epiDatasummary.AgeMin.astype(pandas.Int64Dtype())
 epiDatasummary.AgeMax = epiDatasummary.AgeMax.astype(pandas.Int64Dtype())
+epiDatasummary.Iteration = epiDatasummary.Iteration.astype(pandas.Int64Dtype())
 
 # save the expectations data
 saveDatasheet(myScenario, epiDatasummary, "epi_DataSummary")
