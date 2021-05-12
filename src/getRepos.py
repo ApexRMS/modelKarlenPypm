@@ -9,6 +9,7 @@ import requests
 import datetime
 import pycountry
 import pandas
+import translate
 
 #import sys
 
