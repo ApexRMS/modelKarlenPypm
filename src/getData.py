@@ -156,7 +156,7 @@ for index, row in dataLUT.iterrows():
                  # I reckon that some of the data is mislabelled (the in_icu data, for example), as to 'daily' vs 'total'
                 # if it's not monotone, then it must be daily
                 daily_or_total = metric
-                if not headerFile.monotonic(the_data):
+                if not headerFile.monotonic(the_data) and not population_name == "deaths": # the cumulative deaths data appears to be non-monotonic, which leads to misidentification
                     daily_or_total = 'daily'
 
                 fancy_name = standardName( '{} {}'.format(daily_or_total, population_name) )
