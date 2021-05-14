@@ -26,6 +26,7 @@ import pandas
 import numpy
 import datetime
 import copy
+import warnings
 
 import headerFile
 from syncro import *
@@ -72,60 +73,67 @@ if not parameter_frame.empty:
         # set the parameter name,m description, and other class attributes
         name = parameter_frame.Name.loc[index]
 
-        the_model.parameters[name].description = parameter_frame.Description[index]
-
-        the_model.parameters[name].set_min(parameter_frame.ParameterMin[index])
-        the_model.parameters[name].set_max(parameter_frame.ParameterMax[index])
-
-        if the_model.parameters[name].parameter_type == 'int':
-            the_model.parameters[name].set_value(int( parameter_frame.InitialValue[index] ))
-        elif the_model.parameters[name].parameter_type == 'float':
-            the_model.parameters[name].set_value( parameter_frame.InitialValue[index] )
-
-        the_model.parameters[name].new_initial_value()
-
-        # fixed variables are held constant during the fitting step
-        if parameter_frame.Status[index] == 'fixed':
-            the_model.parameters[name].set_fixed()
-
-
-        # variable values are fit during the fitting step by the Optimizer object.
-        elif parameter_frame.Status[index] == 'variable':
-
-            # the prior distribution of each parameter is either normal or uniform
-            prior_func = parameter_frame.PriorFunction[index]
-
-            # we're not allowing a parameter to be set as variable without a specified prior function
-            if prior_func == '':
-                print('\t parameter {} set to variable but prior function not set (currently {}). \
-                      no changes made, please adjust and rerun ***'.format(name, prior_func))
-                continue
-
-            # setting the parameters of the prior distributions
-            prior_params = dict()
-
-            if parameter_frame.PriorFunction[index] == 'uniform':
-
-                prior_params = {
-                    'mean': parameter_frame.PriorMean[index],
-                    'half_width' : parameter_frame.PriorSecond[index]
-                }
-
-            elif parameter_frame.PriorFunction[index] == 'normal':
-
-                prior_params = {
-                    'mean' : parameter_frame.PriorMean[index],
-                    'sigma' : parameter_frame.PriorSecond[index]
-                }
-
-            the_model.parameters[name].set_variable(prior_function=prior_func, prior_parameters=prior_params)
-
-        else:
-            print('*** STATUS FOR THE PARAMETER {} IS MISTYPED. CAN ONLY BE `fixed` or `variable`, \
-                  not {} ***'.format(name, parameter_frame['name'][index]))
-
-        # call the reset class method to complete the process of setting this parameter
-        the_model.parameters[name].reset()
+        try:
+            the_model.parameters[name].description = parameter_frame.Description[index]
+    
+            the_model.parameters[name].set_min(parameter_frame.ParameterMin[index])
+            the_model.parameters[name].set_max(parameter_frame.ParameterMax[index])
+    
+            if the_model.parameters[name].parameter_type == 'int':
+                the_model.parameters[name].set_value(int( parameter_frame.InitialValue[index] ))
+            elif the_model.parameters[name].parameter_type == 'float':
+                the_model.parameters[name].set_value( parameter_frame.InitialValue[index] )
+    
+            the_model.parameters[name].new_initial_value()
+    
+            # fixed variables are held constant during the fitting step
+            if parameter_frame.Status[index] == 'fixed':
+                the_model.parameters[name].set_fixed()
+    
+    
+            # variable values are fit during the fitting step by the Optimizer object.
+            elif parameter_frame.Status[index] == 'variable':
+    
+                # the prior distribution of each parameter is either normal or uniform
+                prior_func = parameter_frame.PriorFunction[index]
+    
+                # we're not allowing a parameter to be set as variable without a specified prior function
+                if prior_func == '':
+                    print('\t parameter {} set to variable but prior function not set (currently {}). \
+                          no changes made, please adjust and rerun ***'.format(name, prior_func))
+                    continue
+    
+                # setting the parameters of the prior distributions
+                prior_params = dict()
+    
+                if parameter_frame.PriorFunction[index] == 'uniform':
+    
+                    prior_params = {
+                        'mean': parameter_frame.PriorMean[index],
+                        'half_width' : parameter_frame.PriorSecond[index]
+                    }
+    
+                elif parameter_frame.PriorFunction[index] == 'normal':
+    
+                    prior_params = {
+                        'mean' : parameter_frame.PriorMean[index],
+                        'sigma' : parameter_frame.PriorSecond[index]
+                    }
+    
+                the_model.parameters[name].set_variable(prior_function=prior_func, prior_parameters=prior_params)
+    
+            else:
+                print('*** STATUS FOR THE PARAMETER {} IS MISTYPED. CAN ONLY BE `fixed` or `variable`, \
+                      not {} ***'.format(name, parameter_frame['name'][index]))
+    
+            # call the reset class method to complete the process of setting this parameter
+            the_model.parameters[name].reset()
+            
+        except KeyError:
+            warnings.warn('Parameter defined in parameter list not found in model!')
+        except Exception as e:
+            print(e)
+                
 
     the_model.boot()
 
