@@ -82,7 +82,7 @@
         </datafeed>
         <datafeed name="ParameterValues" displayName="Parameter Values" dataScope="Scenario">
           <datasheets>
-            <datasheet name="ParameterValues" displayname="Parameter Values" viewFilterColumn="Model">
+            <datasheet name="ParameterValues" displayname="Parameter Values" viewFilterColumn="Model" noRowLimit="True">
               <columns>
                 <column name="ParameterValuesID" dataType="Integer" isPrimary="True"/>
                 <column name="ScenarioID" dataType="Integer" isOptional="True"/>
