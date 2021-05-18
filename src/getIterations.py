@@ -123,6 +123,12 @@ if LUTRow.Jurisdiction not in epiJurisdiction.Name:
     )
 
 
+# Save the model choices datasheet back to the result scenario
+saveDatasheet(
+    myScenario,
+    datasheet(myScenario, "modelKarlenPypm_ModelChoices").iloc[0].to_frame(0).T,
+    "modelKarlenPypm_ModelChoices")
+
 # Append to input data
 epiDatasummary = datasheet(myScenario, "epi_DataSummary").drop(columns=['DataSummaryID']).append(epiDatasummary)
 epiDatasummary.AgeMin = epiDatasummary.AgeMin.astype(pandas.Int64Dtype())

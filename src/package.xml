@@ -223,6 +223,7 @@
         </datafeed>
       </datafeeds>
       <pipeline>
+        <datafeed name="ModelChoices"/>
         <datafeed name="FittedModelFile"/>
         <datafeed name="PopulationSelectionTable"/>
         <datafeed name="epi_DataSummary"/>

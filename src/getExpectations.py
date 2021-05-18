@@ -178,18 +178,24 @@ try:
     start_date = datetime.datetime.strptime(model_choices.StartFit, '%Y-%m-%d').date()
 except:
     start_date = the_model.t0
-    
+
+model_choices.StartFit = start_date.strftime("%Y-%m-%d")    
+
 # Projection start date
 try:
     projection_start_date = datetime.datetime.strptime(model_choices.EndFit, '%Y-%m-%d').date()
 except:
     projection_start_date = datetime.datetime.now().date() if filtered_data.empty else datetime.datetime.strptime(filtered_data.Timestep.iloc[-1], '%Y-%m-%d').date()
-    
+
+model_choices.EndFit = projection_start_date.strftime("%Y-%m-%d")
+
 # Projection end date
 try:
     end_date = projection_start_date + datetime.timedelta(days=model_choices.EndDate.item())
 except:
     end_date = projection_start_date + datetime.timedelta(days=model_choices.EndDate.item())
+
+model_choices.EndDate = int((end_date - projection_start_date).days)
 
 # the length of the simulation (in time steps)
 simulation_length = (end_date-start_date).days
@@ -385,6 +391,13 @@ if LUTRow.Jurisdiction not in list(epiJurisdiction.Name):
         pandas.DataFrame({'Name':['{} - {}'.format(LUTRow.Country, LUTRow.Region)], 'Description':['']}),
         "epi_Jurisdiction"
     )
+
+# Save parsed model settings
+saveDatasheet(
+    myScenario,
+    model_choices.to_frame(0).T,
+    "modelKarlenPypm_ModelChoices"
+)
 
 # Append to input data
 epiDatasummary = datasheet(myScenario, "epi_DataSummary").drop(columns=['DataSummaryID']).append(epiDatasummary)
